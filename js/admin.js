@@ -93,14 +93,16 @@ function formatDate() {
 // Modal Functions
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-      modal.classList.add('show');
 
-      const form = modal.querySelector('form');
-      if (form && !currentEditingId) {
-          form.reset();
-      }
+  // Reset form for new entries
+  if (modalId === 'userModal' && document.getElementById('userModalTitle').textContent !== 'Edit User') {
+      document.getElementById('userForm').reset();
+      document.getElementById('userModalTitle').textContent = 'Add User';
+      document.getElementById('userPassword').required = true;
+      delete document.getElementById('userForm').dataset.userId;
   }
+
+  modal.style.display = 'block';
 }
 
 
@@ -944,90 +946,6 @@ function initializeUsers() {
     }
 }
 
-function renderUsers() {
-    const tbody = document.getElementById('userTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    data.users.forEach((user, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${user.username || ''}</td>
-            <td>${user.email || ''}</td>
-            <td>${user.role}</td>
-            <td class="action-btns">
-                <button class="btn btn-success" onclick="editUser(${user.id})">
-                <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger" onclick="deleteUser(${user.id})">
-                <i class="fas fa-trash"></i>
-                </button>
-            </td>
-            `;
-
-        tbody.appendChild(row);
-    });
-}
-
-function saveUser(e) {
-    e.preventDefault();
-
-    const username = document.getElementById('userUsername')?.value;
-    const email = document.getElementById('userEmail')?.value;
-    const password = document.getElementById('userPassword')?.value;
-    const role = document.getElementById('userRole')?.value;
-
-    if (!username || !email || !password || !role) {
-        alert('Please fill in all fields');
-        return;
-    }
-
-    const userData = {
-        id: currentEditingId || generateId(),
-        username,
-        email,
-        password, // In a real app, this should be hashed
-        role
-    };
-
-    if (currentEditingId) {
-        const index = data.users.findIndex(user => user.id === currentEditingId);
-        if (index !== -1) {
-            data.users[index] = userData;
-        }
-    } else {
-        data.users.push(userData);
-    }
-
-    saveToLocalStorage('usersData', data.users);
-    renderUsers();
-    alert('User successfully saved!');
-    closeModal('userModal');
-}
-
-function editUser(id) {
-    const user = data.users.find(u => u.id === id);
-    if (user) {
-        document.getElementById('userUsername').value = user.username || '';
-        document.getElementById('userEmail').value = user.email || '';
-        document.getElementById('userPassword').value = ''; // Don’t populate password
-        document.getElementById('userRole').value = user.role;
-
-        currentEditingId = id;
-        openModal('userModal');
-    }
-}
-
-function deleteUser(id) {
-    if (confirm('Are you sure you want to delete this user?')) {
-        data.users = data.users.filter(user => user.id !== id);
-        saveToLocalStorage('usersData', data.users);
-        renderUsers();
-    }
-}
-
 // Close modal when clicking outside
 function setupModalClosing() {
     document.querySelectorAll('.modal').forEach(modal => {
@@ -1472,5 +1390,160 @@ function saveSupply(event) {
       // Handle supply-list section (read-only, so this might just close modal)
       showNotification('Supply list is read-only', 'info');
       closeModal('supplyModal');
+  }
+}
+
+function renderUsers() {
+  fetch('user_management.php?action=list')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('userTableBody');
+              tbody.innerHTML = '';
+
+              data.data.forEach((user, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${escapeHtml(user.username)}</td>
+                      <td>${escapeHtml(user.email)}</td>
+                      <td>${escapeHtml(user.role)}</td>
+                      <td>
+                          <button class="btn btn-sm btn-secondary" onclick="editUser(${user.user_id})">
+                              <i class="fas fa-edit"></i> Edit
+                          </button>
+                          <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.user_id})">
+                              <i class="fas fa-trash"></i> Delete
+                          </button>
+                      </td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              showNotification('Error loading users: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error loading users', 'error');
+      });
+}
+
+function saveUser(event) {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData(form);
+  const isEdit = document.getElementById('userModalTitle').textContent === 'Edit User';
+  const userId = form.dataset.userId;
+
+  const userData = {
+      username: document.getElementById('userUsername').value,
+      email: document.getElementById('userEmail').value,
+      role: document.getElementById('userRole').value
+  };
+
+  // Only include password if it's provided (for edits) or if it's a new user
+  const password = document.getElementById('userPassword').value;
+  if (password || !isEdit) {
+      userData.password = password;
+  }
+
+  const url = isEdit ?
+      `user_management.php?action=update&id=${userId}` :
+      'user_management.php?action=create';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  fetch(url, {
+      method: method,
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData)
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.success) {
+          showNotification(data.message, 'success');
+          closeModal('userModal');
+          renderUsers();
+      } else {
+          showNotification('Error: ' + data.error, 'error');
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showNotification('Error saving user', 'error');
+  });
+}
+
+function editUser(userId) {
+  fetch(`user_management.php?action=get&id=${userId}`)
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const user = data.data;
+
+              // Populate form
+              document.getElementById('userUsername').value = user.username;
+              document.getElementById('userEmail').value = user.email;
+              document.getElementById('userRole').value = user.role;
+              document.getElementById('userPassword').value = ''; // Clear password field
+
+              // Update modal title and form
+              document.getElementById('userModalTitle').textContent = 'Edit User';
+              document.getElementById('userForm').dataset.userId = userId;
+
+              // Make password optional for edits
+              document.getElementById('userPassword').required = false;
+
+              openModal('userModal');
+          } else {
+              showNotification('Error loading user: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error loading user', 'error');
+      });
+}
+
+function deleteUser(userId) {
+  if (confirm('Are you sure you want to delete this user?')) {
+      fetch(`user_management.php?action=delete&id=${userId}`, {
+          method: 'DELETE'
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              showNotification(data.message, 'success');
+              renderUsers();
+          } else {
+              showNotification('Error: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error deleting user', 'error');
+      });
+  }
+}
+
+function filterUsers() {
+  const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+  const tbody = document.getElementById('userTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+
+  for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const username = row.cells[1].textContent.toLowerCase();
+      const email = row.cells[2].textContent.toLowerCase();
+      const role = row.cells[3].textContent.toLowerCase();
+
+      if (username.includes(searchTerm) || email.includes(searchTerm) || role.includes(searchTerm)) {
+          row.style.display = '';
+      } else {
+          row.style.display = 'none';
+      }
   }
 }
