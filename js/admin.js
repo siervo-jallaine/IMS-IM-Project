@@ -734,101 +734,6 @@ function initializeSupplies() {
     }
 }
 
-// Render Supply List (READ-ONLY - No edit/delete actions)
-function renderAddedSupplies() {
-    const tbody = document.getElementById('addedSupplyTableBody');
-    tbody.innerHTML = '';
-    data.addedSupplies.forEach((supply, i) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${i+1}</td>
-        <td>${supply.name}</td>
-        <td>${supply.quantity}</td>
-        <td>${supply.unit}</td>
-        <td>${supply.receivedBy}</td>   <!-- ← new -->
-        <td>${supply.dateAdded}</td>
-            <td class="action-btns">
-                <button class="btn btn-success" onclick="editAddedSupply(${supply.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger" onclick="deleteAddedSupply(${supply.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-      `;
-      tbody.appendChild(row);
-    });
-  }
-
-function saveSupply(e) {
-    e.preventDefault();
-    const name       = document.getElementById('supplyName').value;
-    const quantity   = parseInt(document.getElementById('supplyQuantity').value);
-    const unit       = document.getElementById('supplyUnit').value;
-    const receivedBy = document.getElementById('supplyReceivedBy').value; // ← new
-
-    if (!name || !unit || !receivedBy) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    const supplyData = {
-      id: currentEditingId || generateId(),
-      name,
-      quantity,
-      unit,
-      receivedBy,                                    // ← new
-      dateAdded: currentEditingId
-        ? data.addedSupplies.find(s=>s.id===currentEditingId).dateAdded
-        : formatDate()
-    };
-
-    if (currentEditingId) {
-        // Update existing added supply
-        const index = data.addedSupplies.findIndex(supply => supply.id === currentEditingId);
-        if (index !== -1) {
-            data.addedSupplies[index] = supplyData;
-        }
-    } else {
-        // Add new supply to Added Supply
-        data.addedSupplies.push(supplyData);
-    }
-
-    saveToLocalStorage('addedSuppliesData', data.addedSupplies);
-    renderAddedSupplies();
-    closeModal('supplyModal');
-
-    // Clear form and reset editing mode
-    document.getElementById('supplyForm').reset();
-    currentEditingId = null;
-    document.getElementById('supplyModalTitle').textContent = 'Add Supply';
-}
-
-function editAddedSupply(id) {
-    const supply = data.addedSupplies.find(s => s.id === id);
-    if (supply) {
-        document.getElementById('supplyName').value = supply.name || '';
-        document.getElementById('supplyQuantity').value = supply.quantity || 0;
-        document.getElementById('supplyUnit').value = supply.unit || '';
-
-        // Update modal title
-        const title = document.getElementById('supplyModalTitle');
-        if (title) title.textContent = 'Edit Added Supply';
-
-        currentEditingId = id;
-        openModal('supplyModal');
-    }
-}
-
-
-function deleteAddedSupply(id) {
-    if (confirm('Are you sure you want to delete this added supply?')) {
-        data.addedSupplies = data.addedSupplies.filter(supply => supply.id !== id);
-        saveToLocalStorage('addedSuppliesData', data.addedSupplies);
-        renderAddedSupplies();
-    }
-}
-
 // Alternative Supply Functions (from supply list reference)
 function showAddModal() {
     openModal('addModal');
@@ -1367,23 +1272,6 @@ function filterSupplies() {
   });
 }
 
-function filterAddedSupplies() {
-  const searchTerm = document.getElementById('addedSupplySearch').value.toLowerCase();
-  const tableRows = document.querySelectorAll('#addedSupplyTableBody tr');
-
-  tableRows.forEach(row => {
-      const supplyName = row.cells[1].textContent.toLowerCase();
-      const receivedBy = row.cells[4].textContent.toLowerCase();
-      const unit = row.cells[3].textContent.toLowerCase();
-
-      if (supplyName.includes(searchTerm) || receivedBy.includes(searchTerm) || unit.includes(searchTerm)) {
-          row.style.display = '';
-      } else {
-          row.style.display = 'none';
-      }
-  });
-}
-
 // Utility function to format date
 function formatDate(dateString) {
   const date = new Date(dateString);
@@ -1417,4 +1305,172 @@ function showNotification(message, type = 'info') {
   setTimeout(() => {
     notification.remove();
   }, 3000);
+}
+
+function renderAddedSupplies() {
+  fetch('added_supply_api.php?action=load')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('addedSupplyTableBody');
+              tbody.innerHTML = '';
+
+              data.data.forEach((supply, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${escapeHtml(supply.supply_name)}</td>
+                      <td>${parseFloat(supply.quantity).toFixed(2)}</td>
+                      <td>${escapeHtml(supply.unit)}</td>
+                      <td>${escapeHtml(supply.received_by)}</td>
+                      <td>${formatDate(supply.date_added)}</td>
+                      <td>
+                          <button class="action-btn edit-btn" onclick="editAddedSupply(${supply.purchase_item_id}, '${escapeHtml(supply.supply_name)}', ${supply.quantity}, '${escapeHtml(supply.unit)}', '${escapeHtml(supply.received_by)}')">
+                              <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="action-btn delete-btn" onclick="deleteAddedSupply(${supply.purchase_item_id})">
+                              <i class="fas fa-trash"></i>
+                          </button>
+                      </td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              console.error('Failed to load added supplies:', data.error);
+              showNotification('Failed to load added supplies', 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error loading added supplies:', error);
+          showNotification('Error loading added supplies', 'error');
+      });
+}
+
+function saveAddedSupply(event) {
+  event.preventDefault();
+
+  const isEdit = document.getElementById('supplyModalTitle').textContent === 'Edit Supply';
+  const supplyName = document.getElementById('supplyName').value.trim();
+  const quantity = parseFloat(document.getElementById('supplyQuantity').value);
+  const unit = document.getElementById('supplyUnit').value.trim();
+  const receivedBy = document.getElementById('supplyReceivedBy').value.trim();
+
+  if (!supplyName || !quantity || quantity <= 0 || !unit || !receivedBy) {
+      showNotification('Please fill in all fields with valid values', 'error');
+      return;
+  }
+
+  const data = {
+      supplyName: supplyName,
+      quantity: quantity,
+      unit: unit,
+      receivedBy: receivedBy
+  };
+
+  if (isEdit) {
+      data.purchase_item_id = parseInt(document.getElementById('supplyForm').dataset.editId);
+  }
+
+  const url = isEdit ? 'added_supply_api.php?action=update' : 'added_supply_api.php?action=add';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  fetch(url, {
+      method: method,
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.success) {
+          showNotification(data.message, 'success');
+          closeModal('supplyModal');
+          renderAddedSupplies();
+          document.getElementById('supplyForm').reset();
+
+          // Reset modal title for next use
+          document.getElementById('supplyModalTitle').textContent = 'Add Supply';
+          delete document.getElementById('supplyForm').dataset.editId;
+      } else {
+          showNotification(data.error || 'Operation failed', 'error');
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showNotification('An error occurred', 'error');
+  });
+}
+
+function editAddedSupply(purchaseItemId, supplyName, quantity, unit, receivedBy) {
+  document.getElementById('supplyModalTitle').textContent = 'Edit Supply';
+  document.getElementById('supplyName').value = supplyName;
+  document.getElementById('supplyQuantity').value = quantity;
+  document.getElementById('supplyUnit').value = unit;
+  document.getElementById('supplyReceivedBy').value = receivedBy;
+  document.getElementById('supplyForm').dataset.editId = purchaseItemId;
+  openModal('supplyModal');
+}
+
+function deleteAddedSupply(purchaseItemId) {
+  if (!confirm('Are you sure you want to delete this supply entry? This will also reduce the inventory quantity.')) {
+      return;
+  }
+
+  fetch('added_supply_api.php?action=delete', {
+      method: 'DELETE',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ purchase_item_id: purchaseItemId })
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.success) {
+          showNotification(data.message, 'success');
+          renderAddedSupplies();
+      } else {
+          showNotification(data.error || 'Failed to delete supply', 'error');
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showNotification('An error occurred', 'error');
+  });
+}
+
+function filterAddedSupplies() {
+  const searchTerm = document.getElementById('addedSupplySearch').value.toLowerCase();
+  const tbody = document.getElementById('addedSupplyTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+
+  for (let row of rows) {
+      const cells = row.getElementsByTagName('td');
+      let found = false;
+
+      // Search in supply name, received by
+      for (let i = 1; i <= 4; i++) {
+          if (cells[i] && cells[i].textContent.toLowerCase().includes(searchTerm)) {
+              found = true;
+              break;
+          }
+      }
+
+      row.style.display = found ? '' : 'none';
+  }
+}
+
+function saveSupply(event) {
+  event.preventDefault();
+
+  // Check which section is currently active
+  const currentSection = document.querySelector('.content-section.active').id;
+
+  if (currentSection === 'added-supply') {
+      saveAddedSupply(event);
+  } else {
+      // Handle supply-list section (read-only, so this might just close modal)
+      showNotification('Supply list is read-only', 'info');
+      closeModal('supplyModal');
+  }
 }
