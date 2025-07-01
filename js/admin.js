@@ -1406,46 +1406,15 @@ function showAlert(message, type = 'info') {
     alert.remove();
   }, 3000);
 }
-// Helper function to show notifications (add this if not already present)
+// notification.js
 function showNotification(message, type = 'info') {
-  // Create notification element
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
   notification.textContent = message;
-
-  // Style the notification
-  notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      border-radius: 5px;
-      color: white;
-      font-weight: bold;
-      z-index: 10000;
-      animation: slideIn 0.3s ease-out;
-  `;
-
-  // Set background color based on type
-  switch (type) {
-      case 'success':
-          notification.style.backgroundColor = '#28a745';
-          break;
-      case 'error':
-          notification.style.backgroundColor = '#dc3545';
-          break;
-      case 'warning':
-          notification.style.backgroundColor = '#ffc107';
-          notification.style.color = '#000';
-          break;
-      default:
-          notification.style.backgroundColor = '#17a2b8';
-  }
-
   document.body.appendChild(notification);
 
-  // Remove notification after 3 seconds
+  // Remove after 3 seconds
   setTimeout(() => {
-      notification.remove();
+    notification.remove();
   }, 3000);
 }
