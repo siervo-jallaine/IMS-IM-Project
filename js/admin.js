@@ -1093,7 +1093,7 @@ function confirmLogout(event) {
   function performLogout() {
     closeModal('logoutConfirmModal');
     // You can redirect to your login page or clear localStorage here
-    window.location.href = "login.html"; // Adjust as needed
+    window.location.href = "logout.php"; // Adjust as needed
   }
 
 // Initialize everything when DOM is loaded

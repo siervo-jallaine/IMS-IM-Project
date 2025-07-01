@@ -75,35 +75,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Form submit event
-    form.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevent default form submission
+    // // Form submit event
+    // form.addEventListener('submit', function(e) {
+    //     e.preventDefault(); // Prevent default form submission
 
-        if (!checkValidity()) {
-            return;
-        }
+    //     if (!checkValidity()) {
+    //         return;
+    //     }
 
-        // Simulate login process
-        signInBtn.textContent = "Signing In...";
-        signInBtn.disabled = true;
+    //     // Simulate login process
+    //     signInBtn.textContent = "Signing In...";
+    //     signInBtn.disabled = true;
 
-        // Simulate async login (replace with actual authentication)
-        setTimeout(() => {
-            // Success simulation
-            alert('Login successful!\n\nRedirecting to dashboard...');
+    //     // Simulate async login (replace with actual authentication)
+    //     setTimeout(() => {
+    //         // Success simulation
+    //         alert('Login successful!\n\nRedirecting to dashboard...');
             
-            // In a real application, you would redirect to the dashboard:
-            // window.location.href = 'dashboard.html';
+    //         // In a real application, you would redirect to the dashboard:
+    //         // window.location.href = 'dashboard.html';
             
-            // Reset button for demo purposes
-            signInBtn.textContent = "Sign In";
-            signInBtn.disabled = false;
+    //         // Reset button for demo purposes
+    //         signInBtn.textContent = "Sign In";
+    //         signInBtn.disabled = false;
             
-            // Clear form
-            form.reset();
-            checkValidity();
-        }, 2000);
-    });
+    //         // Clear form
+    //         form.reset();
+    //         checkValidity();
+    //     }, 2000);
+    // });
 
     // Enter key support for better UX
     emailInput.addEventListener('keydown', function(e) {
@@ -125,9 +125,9 @@ function showNotification(message, type = 'info') {
     console.log(`${type.toUpperCase()}: ${message}`);
 }
 
-function togglePasswordVisibility() {
-    // Function to add password visibility toggle (can be enhanced later)
-    const passwordInput = document.getElementById('passwordInput');
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInput.setAttribute('type', type);
-}
+// function togglePasswordVisibility() {
+//     // Function to add password visibility toggle (can be enhanced later)
+//     const passwordInput = document.getElementById('passwordInput');
+//     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+//     passwordInput.setAttribute('type', type);
+// }

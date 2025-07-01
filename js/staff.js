@@ -907,6 +907,6 @@ function confirmLogout(event) {
   
   function performLogout() {
     closeModal('logoutConfirmModal');
-    window.location.href = "login.html"; // Adjust if you use a different page
+    window.location.href = "logout.php"; // Adjust if you use a different page
   }
   
