@@ -399,23 +399,28 @@ if (!isset($_SESSION['username']) ||
                 <button class="close-btn" onclick="closeModal('saleModal')">&times;</button>
             </div>
             <form id="saleForm" onsubmit="saveSale(event)">
-                <div class="form-group">
+                <<div class="form-group" id="autocomplete-container">
                     <label for="saleProductName">Product Name</label>
-                    <input type="text" id="saleProductName" required>
+                    <input type="text" 
+                            id="saleProductName" 
+                            autocomplete="off" 
+                            required>
+                    <div id="productSuggestions" class="suggestions-list"></div>
                 </div>
+
                 <div class="form-group">
                     <label for="saleProductSize">Product Size</label>
                     <select id="saleProductSize" required>
                         <option value="">Select Size</option>
-                        <option value="SHOT">SHOT</option>
-                        <option value="12oz">12oz</option>
-                        <option value="13oz">13oz</option>
+                        <option value="Shot">Shot</option>
+                        <option value="12 oz">12 oz</option>
+                        <option value="16 oz">16 oz</option>
                     </select>
                 </div>
                  <!-- new: Entered By -->
                  <div class="form-group">
                     <label for="saleEnteredBy">Entered By</label>
-                    <input type="text" id="saleEnteredBy" required>
+                    <input type="text" id="saleEnteredBy"  value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" required readonly>
                 </div>
                 
                 <!-- new: Quantity as a number‐input -->

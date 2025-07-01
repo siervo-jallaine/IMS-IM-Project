@@ -16,7 +16,7 @@ SELECT
     LEFT JOIN product_size AS ps ON pv.product_size_id = ps.product_size_id
     LEFT JOIN user AS u ON usage_log.user_id = u.user_id
     WHERE usage_log.is_deleted = 0
-    ORDER BY usage_log.usage_date DESC
+    ORDER BY usage_log.usage_date DESC, usage_log.usage_id DESC
 ";
 
 $result = $conn->query($sql);

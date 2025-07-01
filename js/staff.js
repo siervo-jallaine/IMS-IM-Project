@@ -221,6 +221,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    const dropdownItems = document.querySelectorAll('.dropdown-item');
+
     // Setup dropdown menu items
     dropdownItems.forEach(item => {
         item.addEventListener('click', function(e) {
@@ -232,13 +234,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    loadSales();
     // Initialize all other modules
+    setupAutocomplete('saleProductName', 'productSuggestions', 'get_product_names.php');
     initializeNavigation();
     initializeSales();
     initializeProducts();
     initializeSupplies();
     initializeSuppliers();
-    initializeUsers();
+    // initializeUsers();
     setupModalClosing();
     updateDashboardStats();
     switchSection('dashboard');
@@ -248,7 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadSectionData(sectionName) {
     switch(sectionName) {
         case 'sales':
-            renderSales();
+            loadSales();
+            // renderSales();
             break;
         case 'products':
             renderCategories();
@@ -269,6 +274,63 @@ function loadSectionData(sectionName) {
     }
 }
 
+function setupAutocomplete(inputId, suggestionBoxId, dataUrl) {
+    const input = document.getElementById(inputId);
+    const suggestionsBox = document.getElementById(suggestionBoxId);
+    let suggestionsData = [];
+
+    // Fetch suggestions (e.g. product names)
+    fetch(dataUrl)
+        .then(res => res.json())
+        .then(data => {
+            suggestionsData = data;
+        });
+
+    // 🟩 This listens for user typing
+    input.addEventListener('input', () => {
+        const query = input.value.toUpperCase();
+        console.log("Query:", query);
+        suggestionsBox.innerHTML = '';
+
+        if (query.length === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        const matches = suggestionsData.filter(item =>
+            item.toUpperCase().startsWith(query)
+        );
+
+        console.log(matches)
+
+        if (matches.length === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        matches.forEach(name => {
+            const item = document.createElement('div');
+            item.textContent = name;
+            item.classList.add('autocomplete-item');
+            item.addEventListener('click', () => {
+                input.value = name;
+                suggestionsBox.innerHTML = '';
+                suggestionsBox.style.display = 'none';
+            });
+            suggestionsBox.appendChild(item);
+        });
+
+        suggestionsBox.style.display = 'block';
+    });
+
+    input.addEventListener('blur', () => {
+        // Wait a moment to allow click on suggestion before hiding
+        setTimeout(() => {
+            suggestionsBox.innerHTML = '';
+            suggestionsBox.style.display = 'none';
+        }, 200);
+    });
+}
 
 // Dashboard Functions
 function updateDashboardStats() {
@@ -287,25 +349,37 @@ function initializeSales() {
     const saleForm = document.getElementById('saleForm');
 }
 
-function renderSales() {
+function loadSales() {
+    fetch('get_sales.php')
+        .then(response => response.json())
+        .then(data => {
+            window.salesData = data;
+            renderSales(data);
+        })
+        .catch(error => {
+            console.error('Error fetching sales:', error);
+        });
+}
+
+function renderSales(salesList = window.salesData) {
     const tbody = document.getElementById('salesTableBody');
     if (!tbody) return;
-   
+
     tbody.innerHTML = '';
-   
-    data.sales.forEach((sale, index) => {
+
+    salesList.forEach((sale, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
-            <td>${sale.productName}</td>
-            <td>${sale.quantity}</td>
-            <td>${sale.enteredBy}</td>
-            <td>${sale.date}</td>
+            <td>${sale.product_name} (${sale.size_label})</td>
+            <td>${sale.quantity_sold}</td>
+            <td>${sale.entered_by}</td>
+            <td>${sale.usage_date}</td>
             <td class="action-btns">
-                <button class="btn btn-success" onclick="editSale(${sale.id})">
+                <button class="btn btn-success" onclick="editSale(${sale.usage_id})">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-danger" onclick="deleteSale(${sale.id})">
+                <button class="btn btn-danger" onclick="deleteSale(${sale.usage_id})">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -316,103 +390,99 @@ function renderSales() {
 
 function saveSale(e) {
     e.preventDefault();
-  
+
     const productName  = document.getElementById('saleProductName').value.trim();
+    const productSize  = document.getElementById('saleProductSize').value;
     const quantity     = parseInt(document.getElementById('saleQuantityInput').value, 10);
-    const enteredBy    = document.getElementById('saleEnteredBy').value.trim();          // ← new
-    const date         = formatDate();
-  
-    if (!productName || !enteredBy || quantity < 1) {
-      alert('Please fill in all required fields');
-      return;
-    }
-  
-    const saleData = {
-      id: currentEditingId || generateId(),
-      productName,
-      quantity,
-      enteredBy,     // ← new
-      date
-    };
-  
-    if (currentEditingId) {
-      const idx = data.sales.findIndex(s => s.id === currentEditingId);
-      if (idx > -1) data.sales[idx] = saleData;
-    } else {
-      data.sales.push(saleData);
-    }
-  
-    saveToLocalStorage('salesData', data.sales);
-    renderSales();
-    closeModal('saleModal');
-    updateDashboardStats();
-  }
-  
+    const enteredBy    = document.getElementById('saleEnteredBy').value.trim();
 
-  function editSale(id) {
-    const sale = data.sales.find(s => s.id === id);
-    if (!sale) return;
-    document.getElementById('saleProductName').value   = sale.productName;
-    document.getElementById('saleEnteredBy').value     = sale.enteredBy;
-    document.getElementById('saleQuantityInput').value = sale.quantity;   // ← set .value
-    document.getElementById('saleModalTitle').textContent = 'Edit Sale';
-    currentEditingId = id;
-    openModal('saleModal');
-  }
-  
-
-function deleteSale(id) {
-    if (confirm('Are you sure you want to delete this sale?')) {
-        data.sales = data.sales.filter(sale => sale.id !== id);
-        saveToLocalStorage('salesData', data.sales);
-        renderSales();
-        updateDashboardStats();
-    }
-}
-
-// Alternative Sales Functions (from sales.js reference)
-function addSale() {
-    const name = document.getElementById("productName")?.value;
-    const qty = document.getElementById("quantity")?.textContent;
-    const addOn = document.getElementById("addOn")?.value;
-    const addOnQty = document.getElementById("addOnQty")?.textContent;
-    const date = new Date().toLocaleString("en-US", {
-        month: "short", day: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
-    });
-
-    if (!name) {
-        alert('Please enter a product name');
+    if (!productName || !productSize || !enteredBy || quantity < 1) {
+        alert('Please fill in all required fields');
         return;
     }
 
-    const table = document.getElementById("salesTableBody");
-    if (table) {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${data.sales.length + 1}</td>
-            <td><strong>${name}</strong></td>
-            <td>${qty}</td>
-            <td>${date}</td>
-            <td class="actions">
-                <button class="edit-btn" onclick="editSale(this)">✏️</button>
-            </td>
-        `;
-        table.appendChild(row);
-        
-        // Add to data array
-        data.sales.push({
-            id: generateId(),
-            productName: name,
-            quantity: parseInt(qty),
-            addOn: addOn,
-            addOnQty: parseInt(addOnQty),
-            date: date
-        });
-        
-        saveToLocalStorage('salesData', data.sales);
-        closeModal('modal');
+    // Prepare data to send
+    const formData = new FormData();
+    formData.append('usage_id', currentEditingId || '');
+    formData.append('product_name', productName);
+    formData.append('size_label', productSize);
+    formData.append('quantity_sold', quantity);
+    formData.append('entered_by', enteredBy);
+
+    fetch('save_sale.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.success) {
+            alert('Sale saved successfully!');
+            closeModal('saleModal');
+            currentEditingId = null;
+            loadSales();
+        } else {
+            alert('Failed to save sale: ' + response.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving sale:', error);
+        alert('Error saving sale. See console for details.');
+    });
+}
+
+function editSale(id) {
+    const sale = window.salesData.find(s => s.usage_id == id);
+    if (!sale) {
+        console.warn("Sale not found for ID:", id);
+        return;
     }
+
+    document.getElementById('saleProductName').value   = sale.product_name;
+    document.getElementById('saleProductSize').value   = sale.size_label;
+    document.getElementById('saleEnteredBy').value     = sale.entered_by;
+    document.getElementById('saleQuantityInput').value = sale.quantity_sold;
+    document.getElementById('saleModalTitle').textContent = 'Edit Sale';
+
+    currentEditingId = id;
+    openModal('saleModal');
+}
+
+function deleteSale(id) {
+    if (!confirm('Are you sure you want to delete this sale?')) return;
+
+    fetch('delete_sale.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ usage_id: id })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('Sale deleted successfully');
+            loadSales();
+            updateDashboardStats();
+        } else {
+            alert('Failed to delete sale: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        alert('An error occurred while deleting the sale.');
+    });
+}
+
+function filterSales() {
+    const input = document.getElementById('salesSearch');
+    const searchTerm = input.value.toLowerCase().trim();
+
+    const filtered = window.salesData.filter(sale => {
+        const text = `${sale.product_name} ${sale.size_label} ${sale.entered_by} ${sale.usage_date}`.toLowerCase();
+        return text.includes(searchTerm);
+    });
+
+    renderSales(filtered);
 }
 
 function resetForm() {
