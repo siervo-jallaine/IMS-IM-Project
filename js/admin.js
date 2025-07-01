@@ -22,7 +22,7 @@ let data = {
             id: 2,
             name: "Espresso",
             size: "SHOT",
-            category: "Espresso", 
+            category: "Espresso",
             stock: 15,
             ingredients: [
                 { name: "Coffee Beans", amount: "1 Gram" },
@@ -42,7 +42,7 @@ let data = {
             ]
         }
     ],
-    
+
     supplies: JSON.parse(localStorage.getItem('suppliesData')) || [
         { id: 1, name: "Robusta Coffee Beans", quantity: 1, unit: "PG" },
         { id: 2, name: "Caramel Sauce", quantity: 1, unit: "BTL" },
@@ -92,15 +92,15 @@ function formatDate() {
 
 // Modal Functions
 function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('show');
-        
-        const form = modal.querySelector('form');
-        if (form && !currentEditingId) {
-            form.reset();
-        }
-    }
+  const modal = document.getElementById(modalId);
+  if (modal) {
+      modal.classList.add('show');
+
+      const form = modal.querySelector('form');
+      if (form && !currentEditingId) {
+          form.reset();
+      }
+  }
 }
 
 
@@ -123,7 +123,7 @@ function resetModalTitles() {
         'supplierModalTitle': 'Add Supplier',
         'userModalTitle': 'Add Staff'
     };
-    
+
     Object.keys(modalTitles).forEach(titleId => {
         const titleElement = document.getElementById(titleId);
         if (titleElement) {
@@ -136,7 +136,7 @@ function resetModalTitles() {
 function changeQuantity(elementId, delta) {
     const el = document.getElementById(elementId);
     if (!el) return;
-  
+
     // If it's a number‐input, change its .value
     if (el.tagName === 'INPUT' && el.type === 'number') {
       let val = parseInt(el.value, 10) || 1;
@@ -149,7 +149,7 @@ function changeQuantity(elementId, delta) {
       val = Math.max(1, val + delta);
       el.textContent = val;
     }
-  }  
+  }
 
 function changeQty(type, delta) {
     const element = document.getElementById(type);
@@ -173,7 +173,7 @@ function initializeNavigation() {
 function toggleDropdown() {
     const dropdown = document.querySelector('.dropdown');
     const dropdownMenu = document.getElementById("supplyDropdownMenu");
-    
+
     if (dropdown && dropdownMenu) {
         dropdown.classList.toggle('open');
         dropdownMenu.classList.toggle('show');
@@ -186,7 +186,7 @@ function switchSection(sectionName) {
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Remove active class from all nav items
     document.querySelectorAll('.nav-item, .dropdown-toggle, .dropdown-item').forEach(item => {
         item.classList.remove('active');
@@ -202,7 +202,7 @@ function switchSection(sectionName) {
     const activeNavItem = document.querySelector(`[data-section="${sectionName}"]`);
     if (activeNavItem) {
         activeNavItem.classList.add('active');
-        
+
         // If it's a dropdown item, also highlight the main dropdown
         if (activeNavItem.classList.contains('dropdown-item')) {
             const dropdownToggle = document.querySelector('.dropdown-toggle');
@@ -213,7 +213,7 @@ function switchSection(sectionName) {
     }
 
     currentSection = sectionName;
-    
+
     // Load section-specific data
     loadSectionData(sectionName);
 }
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleDropdown();
         });
     }
-    
+
     // Setup dropdown menu items
     dropdownItems.forEach(item => {
         item.addEventListener('click', function(e) {
@@ -239,8 +239,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
-    
+
+
     // Initialize all other modules
     initializeNavigation();
     initializeSales();
@@ -287,7 +287,7 @@ function updateDashboardStats() {
     const totalProductsEl = document.getElementById('totalProducts');
     const totalSuppliersEl = document.getElementById('totalSuppliers');
     const totalSalesEl = document.getElementById('totalSales');
-    
+
     if (totalProductsEl) totalProductsEl.textContent = data.products.length;
     if (totalSuppliersEl) totalSuppliersEl.textContent = data.suppliers.length;
     if (totalSalesEl) totalSalesEl.textContent = data.sales.length;
@@ -302,9 +302,9 @@ function initializeSales() {
 function renderSales() {
     const tbody = document.getElementById('salesTableBody');
     if (!tbody) return;
-   
+
     tbody.innerHTML = '';
-   
+
     data.sales.forEach((sale, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -328,17 +328,17 @@ function renderSales() {
 
 function saveSale(e) {
     e.preventDefault();
-  
+
     const productName  = document.getElementById('saleProductName').value.trim();
     const quantity     = parseInt(document.getElementById('saleQuantityInput').value, 10);
     const enteredBy    = document.getElementById('saleEnteredBy').value.trim();          // ← new
     const date         = formatDate();
-  
+
     if (!productName || !enteredBy || quantity < 1) {
       alert('Please fill in all required fields');
       return;
     }
-  
+
     const saleData = {
       id: currentEditingId || generateId(),
       productName,
@@ -346,20 +346,20 @@ function saveSale(e) {
       enteredBy,     // ← new
       date
     };
-  
+
     if (currentEditingId) {
       const idx = data.sales.findIndex(s => s.id === currentEditingId);
       if (idx > -1) data.sales[idx] = saleData;
     } else {
       data.sales.push(saleData);
     }
-  
+
     saveToLocalStorage('salesData', data.sales);
     renderSales();
     closeModal('saleModal');
     updateDashboardStats();
   }
-  
+
 
   function editSale(id) {
     const sale = data.sales.find(s => s.id === id);
@@ -371,7 +371,7 @@ function saveSale(e) {
     currentEditingId = id;
     openModal('saleModal');
   }
-  
+
 
 function deleteSale(id) {
     if (confirm('Are you sure you want to delete this sale?')) {
@@ -412,7 +412,7 @@ function addSale() {
             </td>
         `;
         table.appendChild(row);
-        
+
         // Add to data array
         data.sales.push({
             id: generateId(),
@@ -422,7 +422,7 @@ function addSale() {
             addOnQty: parseInt(addOnQty),
             date: date
         });
-        
+
         saveToLocalStorage('salesData', data.sales);
         closeModal('modal');
     }
@@ -433,7 +433,7 @@ function resetForm() {
     const addOn = document.getElementById("addOn");
     const quantity = document.getElementById("quantity");
     const addOnQty = document.getElementById("addOnQty");
-    
+
     if (productName) productName.value = "Ice Americano";
     if (addOn) addOn.value = "Vanilla Syrup";
     if (quantity) quantity.textContent = "1";
@@ -454,31 +454,31 @@ function initializeProducts() {
     const categoryForm = document.getElementById('categoryForm');
     const productForm = document.getElementById('productForm');
     const backToCategoriesBtn = document.getElementById('backToCategoriesBtn');
-    
+
     if (addCategoryBtn) {
         addCategoryBtn.addEventListener('click', () => openModal('categoryModal'));
     }
-    
+
     if (addProductBtn) {
         addProductBtn.addEventListener('click', () => {
             const hiddenInput = document.getElementById('hiddenCategoryId');
             if (hiddenInput) hiddenInput.value = currentCategoryName;
             openModal('productModal');
         });
-    }    
-    
+    }
+
     if (categoryForm) {
         categoryForm.addEventListener('submit', saveCategory);
     }
-    
+
     if (productForm) {
         productForm.addEventListener('submit', saveProduct);
     }
-    
+
     if (backToCategoriesBtn) {
         backToCategoriesBtn.addEventListener('click', showCategoryView);
     }
-    
+
     // Initialize category dropdown
     updateProductCategoryDropdown();
 }
@@ -486,9 +486,9 @@ function initializeProducts() {
 function renderCategories() {
     const tbody = document.getElementById('categoryTableBody');
     if (!tbody) return;
-   
+
     tbody.innerHTML = '';
-   
+
     data.categories.forEach((category, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -505,7 +505,7 @@ function renderCategories() {
         `;
         tbody.appendChild(row);
     });
-   
+
     // Update product category dropdown
     updateProductCategoryDropdown();
 }
@@ -527,13 +527,13 @@ function updateProductCategoryDropdown() {
 function renderProducts(categoryFilter = null) {
     const tbody = document.getElementById('productTableBody');
     if (!tbody) return;
-    
+
     tbody.innerHTML = '';
-    
+
     let productsToShow = categoryFilter
         ? data.products.filter(product => product.category === categoryFilter)
         : data.products;
-    
+
     productsToShow.forEach((product, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -557,13 +557,13 @@ function renderProducts(categoryFilter = null) {
 function showIngredients(productId) {
     const product = data.products.find(p => p.id === productId);
     if (!product) return;
-    
+
     // Set modal title
     const modalTitle = document.getElementById('ingredientsModalTitle');
     if (modalTitle) {
         modalTitle.textContent = `${product.name} - Ingredients`;
     }
-    
+
     // Populate ingredients content
     const ingredientsContent = document.getElementById('ingredientsContent');
     if (ingredientsContent && product.ingredients) {
@@ -576,21 +576,21 @@ function showIngredients(productId) {
     } else {
         ingredientsContent.innerHTML = '<p>No ingredients data available.</p>';
     }
-    
+
     // Show modal
     openModal('ingredientsModal');
 }
 
 function saveCategory(e) {
     e.preventDefault();
-    
+
     const categoryName = document.getElementById('categoryName')?.value;
-    
+
     if (!categoryName) {
         alert('Please enter a category name');
         return;
     }
-    
+
     if (currentEditingId) {
         // Edit existing category
         const index = data.categories.findIndex((cat, idx) => idx === currentEditingId);
@@ -601,7 +601,7 @@ function saveCategory(e) {
         // Add new category
         data.categories.push(categoryName);
     }
-    
+
     saveToLocalStorage('categoriesData', data.categories);
     renderCategories();
     closeModal('categoryModal');
@@ -609,7 +609,7 @@ function saveCategory(e) {
 
 function saveProduct(e) {
     e.preventDefault();
-    
+
     const productName = document.getElementById('productName')?.value;
     const productSize = document.getElementById('productSize')?.value;
     const category = document.getElementById('hiddenCategoryId')?.value;
@@ -634,9 +634,9 @@ function saveProduct(e) {
         size: productSize,
         categoryId: categoryId // pulled from hidden input
     };
-    
-    addProductToTable(newProduct);    
-    
+
+    addProductToTable(newProduct);
+
     if (currentEditingId) {
         const index = data.products.findIndex(product => product.id === currentEditingId);
         if (index !== -1) {
@@ -645,12 +645,12 @@ function saveProduct(e) {
     } else {
         data.products.push(productData);
     }
-    
+
     saveToLocalStorage('productsData', data.products);
     renderProducts();
     closeModal('productModal');
     updateDashboardStats();
-    
+
     // Clear form
     document.getElementById('productForm').reset();
     console.log("Adding Product:", productData);
@@ -689,7 +689,7 @@ function showProducts(category) {
 function showCategoryView() {
     const categoryView = document.getElementById('categoryView');
     const productView = document.getElementById('productView');
-    
+
     if (categoryView) categoryView.style.display = 'block';
     if (productView) productView.style.display = 'none';
 }
@@ -697,7 +697,7 @@ function showCategoryView() {
 function showProductView() {
     const categoryView = document.getElementById('categoryView');
     const productView = document.getElementById('productView');
-    
+
     if (categoryView) categoryView.style.display = 'none';
     if (productView) productView.style.display = 'block';
 }
@@ -724,11 +724,11 @@ function deleteCategory(index) {
 function initializeSupplies() {
     const addSupplyBtn = document.getElementById('addSupplyBtn');
     const supplyForm = document.getElementById('supplyForm');
-    
+
     if (addSupplyBtn) {
         addSupplyBtn.addEventListener('click', () => openModal('supplyModal'));
     }
-    
+
     if (supplyForm) {
         supplyForm.addEventListener('submit', saveSupply);
     }
@@ -758,7 +758,7 @@ function renderAddedSupplies() {
       `;
       tbody.appendChild(row);
     });
-  }  
+  }
 
 function saveSupply(e) {
     e.preventDefault();
@@ -766,12 +766,12 @@ function saveSupply(e) {
     const quantity   = parseInt(document.getElementById('supplyQuantity').value);
     const unit       = document.getElementById('supplyUnit').value;
     const receivedBy = document.getElementById('supplyReceivedBy').value; // ← new
-  
+
     if (!name || !unit || !receivedBy) {
       alert('Please fill in all required fields');
       return;
     }
-  
+
     const supplyData = {
       id: currentEditingId || generateId(),
       name,
@@ -782,7 +782,7 @@ function saveSupply(e) {
         ? data.addedSupplies.find(s=>s.id===currentEditingId).dateAdded
         : formatDate()
     };
-    
+
     if (currentEditingId) {
         // Update existing added supply
         const index = data.addedSupplies.findIndex(supply => supply.id === currentEditingId);
@@ -793,11 +793,11 @@ function saveSupply(e) {
         // Add new supply to Added Supply
         data.addedSupplies.push(supplyData);
     }
-    
+
     saveToLocalStorage('addedSuppliesData', data.addedSupplies);
     renderAddedSupplies();
     closeModal('supplyModal');
-    
+
     // Clear form and reset editing mode
     document.getElementById('supplyForm').reset();
     currentEditingId = null;
@@ -810,11 +810,11 @@ function editAddedSupply(id) {
         document.getElementById('supplyName').value = supply.name || '';
         document.getElementById('supplyQuantity').value = supply.quantity || 0;
         document.getElementById('supplyUnit').value = supply.unit || '';
-        
+
         // Update modal title
         const title = document.getElementById('supplyModalTitle');
         if (title) title.textContent = 'Edit Added Supply';
-        
+
         currentEditingId = id;
         openModal('supplyModal');
     }
@@ -842,19 +842,19 @@ function addSupply() {
     const name = document.getElementById("supplyName")?.value;
     const qty = document.getElementById("quantity")?.value;
     const unit = document.getElementById("unit")?.value;
-    
+
     if (!name || !qty || !unit) {
         alert("All fields required");
         return;
     }
-    
-    data.supplies.push({ 
+
+    data.supplies.push({
         id: generateId(),
-        name, 
-        quantity: parseInt(qty), 
-        unit 
+        name,
+        quantity: parseInt(qty),
+        unit
     });
-    
+
     saveToLocalStorage('suppliesData', data.supplies);
     renderSupplies();
     hideAddModal();
@@ -864,11 +864,11 @@ function addSupply() {
 function initializeSuppliers() {
     const addSupplierBtn = document.getElementById('addSupplierBtn');
     const supplierForm = document.getElementById('supplierForm');
-    
+
     if (addSupplierBtn) {
         addSupplierBtn.addEventListener('click', () => openModal('supplierModal'));
     }
-    
+
     if (supplierForm) {
         supplierForm.addEventListener('submit', saveSupplier);
     }
@@ -877,9 +877,9 @@ function initializeSuppliers() {
 function renderSuppliers() {
     const tbody = document.getElementById('supplierTableBody');
     if (!tbody) return;
-   
+
     tbody.innerHTML = '';
-   
+
     data.suppliers.forEach((supplier, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -907,19 +907,19 @@ function saveSupplier(e) {
     const name = document.getElementById('supplierName')?.value;
     const number = document.getElementById('supplierNumber')?.value;
     const contact = document.getElementById('supplierContact')?.value;
-    
+
     if (!name || !number || !contact) {
         alert('Please fill in all fields');
         return;
     }
-    
+
     const supplierData = {
         id: currentEditingId || generateId(),
         name,
         number,
         contact
     };
-    
+
     if (currentEditingId) {
         const index = data.suppliers.findIndex(supplier => supplier.id === currentEditingId);
         if (index !== -1) {
@@ -928,7 +928,7 @@ function saveSupplier(e) {
     } else {
         data.suppliers.push(supplierData);
     }
-    
+
     saveToLocalStorage('suppliersData', data.suppliers);
     renderSuppliers();
     closeModal('supplierModal');
@@ -961,11 +961,11 @@ function deleteSupplier(id) {
 function initializeUsers() {
     const addUserBtn = document.getElementById('addUserBtn');
     const userForm = document.getElementById('userForm');
-    
+
     if (addUserBtn) {
         addUserBtn.addEventListener('click', () => openModal('userModal'));
     }
-    
+
     if (userForm) {
         userForm.addEventListener('submit', saveUser);
     }
@@ -974,9 +974,9 @@ function initializeUsers() {
 function renderUsers() {
     const tbody = document.getElementById('userTableBody');
     if (!tbody) return;
-   
+
     tbody.innerHTML = '';
-   
+
     data.users.forEach((user, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -1000,17 +1000,17 @@ function renderUsers() {
 
 function saveUser(e) {
     e.preventDefault();
-    
+
     const username = document.getElementById('userUsername')?.value;
     const email = document.getElementById('userEmail')?.value;
     const password = document.getElementById('userPassword')?.value;
     const role = document.getElementById('userRole')?.value;
-    
+
     if (!username || !email || !password || !role) {
         alert('Please fill in all fields');
         return;
     }
-    
+
     const userData = {
         id: currentEditingId || generateId(),
         username,
@@ -1018,7 +1018,7 @@ function saveUser(e) {
         password, // In a real app, this should be hashed
         role
     };
-    
+
     if (currentEditingId) {
         const index = data.users.findIndex(user => user.id === currentEditingId);
         if (index !== -1) {
@@ -1027,7 +1027,7 @@ function saveUser(e) {
     } else {
         data.users.push(userData);
     }
-    
+
     saveToLocalStorage('usersData', data.users);
     renderUsers();
     alert('User successfully saved!');
@@ -1081,7 +1081,7 @@ function addProductToTable(product) {
             <button class="btn btn-danger btn-sm">Delete</button>
         </td>
     `;
-    
+
     tableBody.appendChild(newRow);
 }
 
@@ -1089,7 +1089,7 @@ function confirmLogout(event) {
     event.preventDefault();
     openModal('logoutConfirmModal');
   }
-  
+
   function performLogout() {
     closeModal('logoutConfirmModal');
     // You can redirect to your login page or clear localStorage here
@@ -1100,20 +1100,241 @@ function confirmLogout(event) {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize navigation
     initializeNavigation();
-    
+
     // Initialize all modules
     initializeSales();
     initializeProducts();
     initializeSupplies();
     initializeSuppliers();
     initializeUsers();
-    
+
     // Setup modal closing
     setupModalClosing();
-    
+
     // Load initial data
     updateDashboardStats();
-    
+
     // Default section is dashboard, make sure it's active
     switchSection('dashboard');
 });
+
+// Supply List Functions (Read-only)
+function renderSupplies() {
+  fetch('supply_list.php')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('supplyTableBody');
+              tbody.innerHTML = '';
+
+              data.data.forEach((supply, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${supply.supply_name}</td>
+                      <td>${supply.quantity}</td>
+                      <td>${supply.unit}</td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              console.error('Error loading supplies:', data.error);
+              showAlert('Error loading supplies: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showAlert('Error loading supplies', 'error');
+      });
+}
+
+// Added Supply Functions (Full CRUD)
+function renderAddedSupplies() {
+  fetch('added_supply.php')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('addedSupplyTableBody');
+              tbody.innerHTML = '';
+
+              data.data.forEach((supply, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${supply.supply_name}</td>
+                      <td>${supply.quantity}</td>
+                      <td>${supply.unit}</td>
+                      <td>${supply.received_by}</td>
+                      <td>${formatDate(supply.date_added)}</td>
+                      <td>
+                          <button class="btn btn-sm btn-warning" onclick="editAddedSupply(${supply.purchase_item_id}, '${supply.supply_name}', ${supply.quantity}, '${supply.unit}')">
+                              <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="btn btn-sm btn-danger" onclick="deleteAddedSupply(${supply.purchase_item_id})">
+                              <i class="fas fa-trash"></i>
+                          </button>
+                      </td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              console.error('Error loading added supplies:', data.error);
+              showAlert('Error loading added supplies: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showAlert('Error loading added supplies', 'error');
+      });
+}
+
+// Save Supply (handles both add and update)
+function saveSupply(event) {
+  event.preventDefault();
+
+  const form = document.getElementById('supplyForm');
+  const formData = new FormData(form);
+
+  const supplyData = {
+      supply_name: document.getElementById('supplyName').value,
+      quantity: parseFloat(document.getElementById('supplyQuantity').value),
+      unit: document.getElementById('supplyUnit').value,
+      received_by: document.getElementById('supplyReceivedBy').value
+  };
+
+  // Check if we're editing (will have a hidden field or data attribute)
+  const isEditing = form.dataset.editing === 'true';
+  const method = isEditing ? 'PUT' : 'POST';
+
+  if (isEditing) {
+      supplyData.purchase_item_id = parseInt(form.dataset.editId);
+  }
+
+  fetch('added_supply.php', {
+      method: method,
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(supplyData)
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.success) {
+          showAlert(data.message, 'success');
+          closeModal('supplyModal');
+          renderAddedSupplies(); // Refresh the added supplies list
+          renderSupplies(); // Refresh the supply list as well
+          form.reset();
+          form.dataset.editing = 'false';
+          form.dataset.editId = '';
+      } else {
+          showAlert('Error: ' + data.error, 'error');
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showAlert('Error saving supply', 'error');
+  });
+}
+
+// Edit Added Supply
+function editAddedSupply(purchaseItemId, supplyName, quantity, unit) {
+  const form = document.getElementById('supplyForm');
+  const modal = document.getElementById('supplyModal');
+
+  // Set form values
+  document.getElementById('supplyName').value = supplyName;
+  document.getElementById('supplyQuantity').value = quantity;
+  document.getElementById('supplyUnit').value = unit;
+  document.getElementById('supplyReceivedBy').value = ''; // Can't edit received by
+
+  // Mark as editing
+  form.dataset.editing = 'true';
+  form.dataset.editId = purchaseItemId;
+
+  // Update modal title
+  document.getElementById('supplyModalTitle').textContent = 'Edit Supply';
+
+  // Show modal
+  modal.style.display = 'block';
+}
+
+// Delete Added Supply
+function deleteAddedSupply(purchaseItemId) {
+  if (confirm('Are you sure you want to delete this supply entry?')) {
+      fetch(`added_supply.php?id=${purchaseItemId}`, {
+          method: 'DELETE'
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              showAlert(data.message, 'success');
+              renderAddedSupplies(); // Refresh the added supplies list
+              renderSupplies(); // Refresh the supply list as well
+          } else {
+              showAlert('Error: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showAlert('Error deleting supply', 'error');
+      });
+  }
+}
+
+// Filter functions
+function filterSupplies() {
+  const searchTerm = document.getElementById('supplySearch').value.toLowerCase();
+  const tableRows = document.querySelectorAll('#supplyTableBody tr');
+
+  tableRows.forEach(row => {
+      const supplyName = row.cells[1].textContent.toLowerCase();
+      const unit = row.cells[3].textContent.toLowerCase();
+
+      if (supplyName.includes(searchTerm) || unit.includes(searchTerm)) {
+          row.style.display = '';
+      } else {
+          row.style.display = 'none';
+      }
+  });
+}
+
+function filterAddedSupplies() {
+  const searchTerm = document.getElementById('addedSupplySearch').value.toLowerCase();
+  const tableRows = document.querySelectorAll('#addedSupplyTableBody tr');
+
+  tableRows.forEach(row => {
+      const supplyName = row.cells[1].textContent.toLowerCase();
+      const receivedBy = row.cells[4].textContent.toLowerCase();
+      const unit = row.cells[3].textContent.toLowerCase();
+
+      if (supplyName.includes(searchTerm) || receivedBy.includes(searchTerm) || unit.includes(searchTerm)) {
+          row.style.display = '';
+      } else {
+          row.style.display = 'none';
+      }
+  });
+}
+
+// Utility function to format date
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+  });
+}
+
+function showAlert(message, type = 'info') {
+  const alert = document.createElement('div');
+  alert.className = `custom-alert alert-${type}`;
+  alert.textContent = message;
+
+  document.body.appendChild(alert);
+
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    alert.remove();
+  }, 3000);
+}
