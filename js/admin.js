@@ -875,87 +875,155 @@ function initializeSuppliers() {
 }
 
 function renderSuppliers() {
-    const tbody = document.getElementById('supplierTableBody');
-    if (!tbody) return;
+  fetch('suppliers_api.php?action=load')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('supplierTableBody');
+              tbody.innerHTML = '';
 
-    tbody.innerHTML = '';
-
-    data.suppliers.forEach((supplier, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${supplier.name}</td>
-            <td>${supplier.contact}</td>
-            <td>${supplier.number}</td>
-            <td class="action-btns">
-                <button class="btn btn-success" onclick="editSupplier(${supplier.id})">
-                <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger" onclick="deleteSupplier(${supplier.id})">
-                <i class="fas fa-trash"></i>
-                </button>
-            </td>
-            `;
-
-        tbody.appendChild(row);
-    });
+              data.data.forEach((supplier, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${escapeHtml(supplier.supply_name)}</td>
+                      <td>${escapeHtml(supplier.supplier_name)}</td>
+                      <td>${escapeHtml(supplier.contact_no || 'N/A')}</td>
+                      <td>
+                          <button class="action-btn edit-btn" onclick="editSupplier(${supplier.supply_supplier_id}, '${escapeHtml(supplier.supplier_name)}', '${escapeHtml(supplier.contact_no || '')}', '${escapeHtml(supplier.supply_name)}')">
+                              <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="action-btn delete-btn" onclick="deleteSupplier(${supplier.supply_supplier_id})">
+                              <i class="fas fa-trash"></i>
+                          </button>
+                      </td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              console.error('Failed to load suppliers:', data.error);
+              showNotification('Failed to load suppliers', 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error loading suppliers:', error);
+          showNotification('Error loading suppliers', 'error');
+      });
 }
 
-function saveSupplier(e) {
-    e.preventDefault();
+function saveSupplier(event) {
+  event.preventDefault();
 
-    const name = document.getElementById('supplierName')?.value;
-    const number = document.getElementById('supplierNumber')?.value;
-    const contact = document.getElementById('supplierContact')?.value;
+  const isEdit = document.getElementById('supplierModalTitle').textContent === 'Edit Supplier';
+  const supplyName = document.getElementById('supplierSupplyName').value.trim();
+  const supplierName = document.getElementById('supplierName').value.trim();
+  const contactNumber = document.getElementById('supplierNumber').value.trim();
 
-    if (!name || !number || !contact) {
-        alert('Please fill in all fields');
-        return;
-    }
+  if (!supplyName || !supplierName) {
+      showNotification('Please fill in all required fields', 'error');
+      return;
+  }
 
-    const supplierData = {
-        id: currentEditingId || generateId(),
-        name,
-        number,
-        contact
-    };
+  const data = {
+      supplyName: supplyName,
+      supplierName: supplierName,
+      contactNumber: contactNumber
+  };
 
-    if (currentEditingId) {
-        const index = data.suppliers.findIndex(supplier => supplier.id === currentEditingId);
-        if (index !== -1) {
-            data.suppliers[index] = supplierData;
-        }
-    } else {
-        data.suppliers.push(supplierData);
-    }
+  if (isEdit) {
+      data.supply_supplier_id = parseInt(document.getElementById('supplierForm').dataset.editId);
+  }
 
-    saveToLocalStorage('suppliersData', data.suppliers);
-    renderSuppliers();
-    closeModal('supplierModal');
-    updateDashboardStats();
+  const url = isEdit ? 'suppliers_api.php?action=update' : 'suppliers_api.php?action=add';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  fetch(url, {
+      method: method,
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.success) {
+          showNotification(data.message, 'success');
+          closeModal('supplierModal');
+          renderSuppliers();
+          document.getElementById('supplierForm').reset();
+      } else {
+          showNotification(data.error || 'Operation failed', 'error');
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showNotification('An error occurred', 'error');
+  });
 }
 
-function editSupplier(id) {
-    const supplier = data.suppliers.find(s => s.id === id);
-    if (supplier) {
-        document.getElementById('supplierSupplyName').value = supplier.name || '';  // Supply Name
-        document.getElementById('supplierName').value = supplier.contact || '';     // Supplier Name
-        document.getElementById('supplierNumber').value = supplier.number || '';    // Contact Number
-
-        document.getElementById('supplierModalTitle').textContent = 'Edit Supplier';
-        currentEditingId = id;
-        openModal('supplierModal');
-    }
+function editSupplier(supplySupplierID, supplierName, contactNumber, supplyName) {
+  document.getElementById('supplierModalTitle').textContent = 'Edit Supplier';
+  document.getElementById('supplierSupplyName').value = supplyName;
+  document.getElementById('supplierName').value = supplierName;
+  document.getElementById('supplierNumber').value = contactNumber;
+  document.getElementById('supplierForm').dataset.editId = supplySupplierID;
+  openModal('supplierModal');
 }
 
-function deleteSupplier(id) {
-    if (confirm('Are you sure you want to delete this supplier?')) {
-        data.suppliers = data.suppliers.filter(supplier => supplier.id !== id);
-        saveToLocalStorage('suppliersData', data.suppliers);
-        renderSuppliers();
-        updateDashboardStats();
-    }
+function deleteSupplier(supplySupplierID) {
+  if (!confirm('Are you sure you want to remove this supplier?')) {
+      return;
+  }
+
+  fetch('suppliers_api.php?action=delete', {
+      method: 'DELETE',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ supply_supplier_id: supplySupplierID })
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.success) {
+          showNotification(data.message, 'success');
+          renderSuppliers();
+      } else {
+          showNotification(data.error || 'Failed to remove supplier', 'error');
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showNotification('An error occurred', 'error');
+  });
 }
+
+function filterSuppliers() {
+  const searchTerm = document.getElementById('supplierSearch').value.toLowerCase();
+  const tbody = document.getElementById('supplierTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+
+  for (let row of rows) {
+      const cells = row.getElementsByTagName('td');
+      let found = false;
+
+      // Search in supply name, supplier name, and contact number
+      for (let i = 1; i <= 3; i++) {
+          if (cells[i] && cells[i].textContent.toLowerCase().includes(searchTerm)) {
+              found = true;
+              break;
+          }
+      }
+
+      row.style.display = found ? '' : 'none';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 
 // User Management Functions
 function initializeUsers() {
@@ -1336,5 +1404,48 @@ function showAlert(message, type = 'info') {
   // Auto-remove after 3 seconds
   setTimeout(() => {
     alert.remove();
+  }, 3000);
+}
+// Helper function to show notifications (add this if not already present)
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+
+  // Style the notification
+  notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      z-index: 10000;
+      animation: slideIn 0.3s ease-out;
+  `;
+
+  // Set background color based on type
+  switch (type) {
+      case 'success':
+          notification.style.backgroundColor = '#28a745';
+          break;
+      case 'error':
+          notification.style.backgroundColor = '#dc3545';
+          break;
+      case 'warning':
+          notification.style.backgroundColor = '#ffc107';
+          notification.style.color = '#000';
+          break;
+      default:
+          notification.style.backgroundColor = '#17a2b8';
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+      notification.remove();
   }, 3000);
 }
