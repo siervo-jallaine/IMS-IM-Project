@@ -164,66 +164,144 @@ function addSupplier() {
 }
 
 function updateSupplier() {
-    global $conn;
+  global $conn;
 
-    $input = json_decode(file_get_contents('php://input'), true);
+  $input = json_decode(file_get_contents('php://input'), true);
 
-    $supplySupplierID = intval($input['supply_supplier_id'] ?? 0);
-    $supplierName = trim($input['supplierName'] ?? '');
-    $contactNumber = trim($input['contactNumber'] ?? '');
+  $supplySupplierID = intval($input['supply_supplier_id'] ?? 0);
+  $supplierName = trim($input['supplierName'] ?? '');
+  $contactNumber = trim($input['contactNumber'] ?? '');
+  $supplyName = trim($input['supplyName'] ?? '');
 
-    if ($supplySupplierID <= 0 || empty($supplierName)) {
-        throw new Exception('Invalid supplier data');
-    }
+  if ($supplySupplierID <= 0 || empty($supplierName) || empty($supplyName)) {
+      throw new Exception('Invalid supplier data');
+  }
 
-    $conn->begin_transaction();
+  $conn->begin_transaction();
 
-    try {
-        // Get supplier_id from supply_supplier table
-        $getSupplierID = $conn->prepare("SELECT supplier_id FROM supply_supplier WHERE supply_supplier_id = ?");
-        $getSupplierID->bind_param("i", $supplySupplierID);
-        $getSupplierID->execute();
-        $result = $getSupplierID->get_result();
+  try {
+      // Get supplier_id and supply_inventory_id from supply_supplier table
+      $getIDs = $conn->prepare("SELECT ss.supplier_id, ss.supply_inventory_id, si.ingredient_id
+                                FROM supply_supplier ss
+                                JOIN supply_inventory si ON ss.supply_inventory_id = si.supply_inventory_id
+                                WHERE ss.supply_supplier_id = ?");
+      $getIDs->bind_param("i", $supplySupplierID);
+      $getIDs->execute();
+      $result = $getIDs->get_result();
 
-        if ($result->num_rows === 0) {
-            throw new Exception('Supplier relationship not found');
-        }
+      if ($result->num_rows === 0) {
+          throw new Exception('Supplier relationship not found');
+      }
 
-        $row = $result->fetch_assoc();
-        $supplierId = $row['supplier_id'];
+      $row = $result->fetch_assoc();
+      $supplierId = $row['supplier_id'];
+      $ingredientId = $row['ingredient_id'];
 
-        // Update supplier information
-        $updateSupplier = $conn->prepare("UPDATE supplier SET supplier_name = ?, contact_no = ? WHERE supplier_id = ?");
-        $updateSupplier->bind_param("ssi", $supplierName, $contactNumber, $supplierId);
-        $updateSupplier->execute();
+      // Update supplier information
+      $updateSupplier = $conn->prepare("UPDATE supplier SET supplier_name = ?, contact_no = ? WHERE supplier_id = ?");
+      $updateSupplier->bind_param("ssi", $supplierName, $contactNumber, $supplierId);
+      $updateSupplier->execute();
 
-        $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Supplier updated successfully']);
+      // Update ingredient (supply) name
+      $updateIngredient = $conn->prepare("UPDATE ingredient SET ingredient_name = ? WHERE ingredient_id = ?");
+      $updateIngredient->bind_param("si", $supplyName, $ingredientId);
+      $updateIngredient->execute();
 
-    } catch (Exception $e) {
-        $conn->rollback();
-        throw $e;
-    }
+      $conn->commit();
+      echo json_encode(['success' => true, 'message' => 'Supplier updated successfully']);
+
+  } catch (Exception $e) {
+      $conn->rollback();
+      throw $e;
+  }
 }
 
 function deleteSupplier() {
-    global $conn;
+  global $conn;
 
-    $input = json_decode(file_get_contents('php://input'), true);
-    $supplySupplierID = intval($input['supply_supplier_id'] ?? 0);
+  $input = json_decode(file_get_contents('php://input'), true);
+  $supplySupplierID = intval($input['supply_supplier_id'] ?? 0);
 
-    if ($supplySupplierID <= 0) {
-        throw new Exception('Invalid supplier ID');
-    }
+  if ($supplySupplierID <= 0) {
+      throw new Exception('Invalid supplier ID');
+  }
 
-    // Soft delete - set is_active to 0
-    $stmt = $conn->prepare("UPDATE supply_supplier SET is_active = 0 WHERE supply_supplier_id = ?");
-    $stmt->bind_param("i", $supplySupplierID);
+  $conn->begin_transaction();
 
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Supplier removed successfully']);
-    } else {
-        throw new Exception('Failed to remove supplier');
-    }
+  try {
+      // Get supplier_id, supply_inventory_id, and ingredient_id
+      $getIDs = $conn->prepare("SELECT ss.supplier_id, ss.supply_inventory_id, si.ingredient_id
+                                FROM supply_supplier ss
+                                JOIN supply_inventory si ON ss.supply_inventory_id = si.supply_inventory_id
+                                WHERE ss.supply_supplier_id = ?");
+      $getIDs->bind_param("i", $supplySupplierID);
+      $getIDs->execute();
+      $result = $getIDs->get_result();
+
+      if ($result->num_rows === 0) {
+          throw new Exception('Supplier relationship not found');
+      }
+
+      $row = $result->fetch_assoc();
+      $supplierId = $row['supplier_id'];
+      $supplyInventoryId = $row['supply_inventory_id'];
+      $ingredientId = $row['ingredient_id'];
+
+      // 1. Soft delete supply_supplier relationship
+      $deleteSupplySupplier = $conn->prepare("UPDATE supply_supplier SET is_active = 0 WHERE supply_supplier_id = ?");
+      $deleteSupplySupplier->bind_param("i", $supplySupplierID);
+      $deleteSupplySupplier->execute();
+
+      // 2. Soft delete supplier (only if no other active relationships exist)
+      $checkSupplierUsage = $conn->prepare("SELECT COUNT(*) as count FROM supply_supplier WHERE supplier_id = ? AND is_active = 1");
+      $checkSupplierUsage->bind_param("i", $supplierId);
+      $checkSupplierUsage->execute();
+      $supplierUsageResult = $checkSupplierUsage->get_result();
+      $supplierUsageRow = $supplierUsageResult->fetch_assoc();
+
+      if ($supplierUsageRow['count'] == 0) {
+          $deleteSupplier = $conn->prepare("UPDATE supplier SET is_active = 0 WHERE supplier_id = ?");
+          $deleteSupplier->bind_param("i", $supplierId);
+          $deleteSupplier->execute();
+      }
+
+      // 3. Soft delete supply_inventory (only if no other active relationships exist)
+      $checkSupplyInventoryUsage = $conn->prepare("SELECT COUNT(*) as count FROM supply_supplier WHERE supply_inventory_id = ? AND is_active = 1");
+      $checkSupplyInventoryUsage->bind_param("i", $supplyInventoryId);
+      $checkSupplyInventoryUsage->execute();
+      $supplyInventoryUsageResult = $checkSupplyInventoryUsage->get_result();
+      $supplyInventoryUsageRow = $supplyInventoryUsageResult->fetch_assoc();
+
+      if ($supplyInventoryUsageRow['count'] == 0) {
+          $deleteSupplyInventory = $conn->prepare("UPDATE supply_inventory SET is_active = 0 WHERE supply_inventory_id = ?");
+          $deleteSupplyInventory->bind_param("i", $supplyInventoryId);
+          $deleteSupplyInventory->execute();
+      }
+
+      // 4. Soft delete ingredient (only if not used elsewhere)
+      $checkIngredientUsage = $conn->prepare("
+          SELECT
+              (SELECT COUNT(*) FROM supply_inventory WHERE ingredient_id = ? AND is_active = 1) +
+              (SELECT COUNT(*) FROM product_ingredient WHERE ingredient_id = ? AND is_active = 1) +
+              (SELECT COUNT(*) FROM add_on WHERE ingredient_id = ? AND is_active = 1) as total_count
+      ");
+      $checkIngredientUsage->bind_param("iii", $ingredientId, $ingredientId, $ingredientId);
+      $checkIngredientUsage->execute();
+      $ingredientUsageResult = $checkIngredientUsage->get_result();
+      $ingredientUsageRow = $ingredientUsageResult->fetch_assoc();
+
+      if ($ingredientUsageRow['total_count'] == 0) {
+          $deleteIngredient = $conn->prepare("UPDATE ingredient SET is_active = 0 WHERE ingredient_id = ?");
+          $deleteIngredient->bind_param("i", $ingredientId);
+          $deleteIngredient->execute();
+      }
+
+      $conn->commit();
+      echo json_encode(['success' => true, 'message' => 'Supplier removed successfully']);
+
+  } catch (Exception $e) {
+      $conn->rollback();
+      throw $e;
+  }
 }
 ?>

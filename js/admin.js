@@ -873,6 +873,11 @@ function editSupplier(supplySupplierID, supplierName, contactNumber, supplyName)
   document.getElementById('supplierSupplyName').value = supplyName;
   document.getElementById('supplierName').value = supplierName;
   document.getElementById('supplierNumber').value = contactNumber;
+
+  // Make sure the supply name field is editable in edit mode
+  document.getElementById('supplierSupplyName').removeAttribute('readonly');
+  document.getElementById('supplierSupplyName').removeAttribute('disabled');
+
   document.getElementById('supplierForm').dataset.editId = supplySupplierID;
   openModal('supplierModal');
 }
