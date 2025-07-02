@@ -8,12 +8,12 @@ ini_set('session.cookie_samesite', 'Lax');
 session_start();
 
 // Enhanced session validation
-if (!isset($_SESSION['username']) || 
-    !isset($_SESSION['role']) || 
-    $_SESSION['role'] !== 'admin' || 
-    !isset($_SESSION['logged_in']) || 
+if (!isset($_SESSION['username']) ||
+    !isset($_SESSION['role']) ||
+    $_SESSION['role'] !== 'admin' ||
+    !isset($_SESSION['logged_in']) ||
     $_SESSION['logged_in'] !== true) {
-    
+
     // Clear any existing session data
     session_destroy();
     header("Location: login.php");
@@ -57,7 +57,7 @@ if (!isset($_SESSION['username']) ||
                         Supply
                         <i class="fas fa-chevron-down dropdown-icon"></i>
                     </button>
- 
+
                 </div>
                                <!-- Sidebar Supply Dropdown -->
                 <div class="dropdown-menu" id="supplyDropdownMenu">
@@ -129,7 +129,7 @@ if (!isset($_SESSION['username']) ||
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="card large-card">
                         <h2>Inventory Overview</h2>
                         <div class="card-content">
@@ -162,7 +162,7 @@ if (!isset($_SESSION['username']) ||
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="card small-card">
                         <h2>Monthly Usage Summary</h2>
                         <div class="card-content">
@@ -260,7 +260,7 @@ if (!isset($_SESSION['username']) ||
                           </button>
                         </div>
                       </header>
-                      
+
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
@@ -295,7 +295,7 @@ if (!isset($_SESSION['username']) ||
                           ADD PRODUCT
                         </button>
                       </header>
-                      
+
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
@@ -312,7 +312,7 @@ if (!isset($_SESSION['username']) ||
                         </table>
                     </div>
                 </div>
-                
+
             </section>
 
             <!-- Supply List Section -->
@@ -329,7 +329,7 @@ if (!isset($_SESSION['username']) ||
                       </button>
                     </div>
                   </header>
-                  
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -361,7 +361,7 @@ if (!isset($_SESSION['username']) ||
                       </button>
                     </div>
                   </header>
-                  
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -429,7 +429,7 @@ if (!isset($_SESSION['username']) ||
                       </button>
                     </div>
                   </header>
-                  
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -472,13 +472,13 @@ if (!isset($_SESSION['username']) ||
                         <option value="13oz">13oz</option>
                     </select>
                 </div>
-                
+
                 <!-- new: Entered By -->
                 <div class="form-group">
                     <label for="saleEnteredBy">Entered By</label>
                     <input type="text" id="saleEnteredBy" required>
                 </div>
-                
+
                 <!-- new: Quantity as a number‐input -->
                 <div class="form-group">
                     <label for="saleQuantityInput">Quantity</label>
@@ -533,7 +533,7 @@ if (!isset($_SESSION['username']) ||
                     <label for="productName">Product Name</label>
                     <input type="text" id="productName" required>
                 </div>
-            
+
                 <div class="form-group">
                     <label for="productSize">Product Size</label>
                     <select id="productSize" required>
@@ -543,15 +543,15 @@ if (!isset($_SESSION['username']) ||
                         <option value="13oz">13oz</option>
                     </select>
                 </div>
-            
+
                 <input type="hidden" id="hiddenCategoryId">
-            
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Add</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
                 </div>
             </form>
-            
+
         </div>
     </div>
 
@@ -562,7 +562,7 @@ if (!isset($_SESSION['username']) ||
                 <h2 id="supplyModalTitle">Add Supply</h2>
                 <button class="close-btn" onclick="closeModal('supplyModal')">&times;</button>
             </div>
-            <form id="supplyForm" onsubmit="saveSupply(event)">
+            <form id="supplyForm" onsubmit="return saveSupply(event)">
                 <div class="form-group">
                     <label for="supplyName">Supply Name</label>
                     <input type="text" id="supplyName" required>
@@ -606,7 +606,7 @@ if (!isset($_SESSION['username']) ||
                 <div class="form-group">
                     <label for="supplierNumber">Contact Number</label>
                     <input type="text" id="supplierNumber" required>
-                </div>               
+                </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('supplierModal')">Cancel</button>

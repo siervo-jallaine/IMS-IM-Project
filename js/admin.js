@@ -1068,6 +1068,7 @@ function showAlert(message, type = 'info') {
     alert.remove();
   }, 3000);
 }
+
 // notification.js
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
@@ -1120,8 +1121,19 @@ function renderAddedSupplies() {
       });
 }
 
+// Add a flag to prevent double submission
+let isSubmitting = false;
+
 function saveAddedSupply(event) {
   event.preventDefault();
+  event.stopPropagation();
+
+  // Prevent double submission
+  if (isSubmitting) {
+      return false;
+  }
+
+  isSubmitting = true;
 
   const isEdit = document.getElementById('supplyModalTitle').textContent === 'Edit Supply';
   const supplyName = document.getElementById('supplyName').value.trim();
@@ -1131,7 +1143,8 @@ function saveAddedSupply(event) {
 
   if (!supplyName || !quantity || quantity <= 0 || !unit || !receivedBy) {
       showNotification('Please fill in all fields with valid values', 'error');
-      return;
+      isSubmitting = false;
+      return false;
   }
 
   const data = {
@@ -1173,7 +1186,13 @@ function saveAddedSupply(event) {
   .catch(error => {
       console.error('Error:', error);
       showNotification('An error occurred', 'error');
+  })
+  .finally(() => {
+      // Reset the flag after the request completes
+      isSubmitting = false;
   });
+
+  return false;
 }
 
 function editAddedSupply(purchaseItemId, supplyName, quantity, unit, receivedBy) {
@@ -1236,19 +1255,22 @@ function filterAddedSupplies() {
 
 function saveSupply(event) {
   event.preventDefault();
+  event.stopPropagation();
 
   // Check which section is currently active
   const currentSection = document.querySelector('.content-section.active').id;
 
   if (currentSection === 'added-supply') {
-      saveAddedSupply(event);
+      return saveAddedSupply(event);
   } else {
       // Handle supply-list section (read-only, so this might just close modal)
       showNotification('Supply list is read-only', 'info');
       closeModal('supplyModal');
+      return false;
   }
 }
 
+//User Management Functions
 function renderUsers() {
   fetch('user_management.php?action=list')
       .then(response => response.json())
