@@ -1351,3 +1351,35 @@ scrollbar-color: #774927 #f1f1f1;
     transform: translateY(0);
   }
 }
+
+#autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Suggestions Dropdown */
+.suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 150px;
+  overflow-y: auto;
+  display: none;
+}
+
+/* Suggestion Item */
+.suggestions-list div {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+/* Hover effect */
+.suggestions-list div:hover {
+  background-color: #f0f0f0;
+}
