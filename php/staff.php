@@ -299,6 +299,20 @@ if (!isset($_SESSION['username']) ||
                         </table>
                     </div>
                 </div>
+
+                <div class="modal" id="ingredientsModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 id="ingredientsModalTitle">Product Ingredients</h2>
+                            <button class="close-btn" onclick="closeModal('ingredientsModal')">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="ingredientsContent">
+                                <!-- Ingredients will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Supply List Section -->
