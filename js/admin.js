@@ -153,6 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     loadSales();
+    loadCategories();
     // Initialize all other modules
     console.log('DOM fully loaded ✅');
     setupAutocomplete('saleProductName', 'productSuggestions', 'get_product_names.php');
@@ -175,7 +176,7 @@ function loadSectionData(sectionName) {
             // setupAutocomplete('saleProductName', 'productSuggestions', 'get_product_names.php');
             break;
         case 'products':
-            renderCategories();
+            loadCategories();
             showCategoryView();
             break;
         case 'supply-list':
@@ -260,9 +261,9 @@ function updateDashboardStats() {
     const totalSuppliersEl = document.getElementById('totalSuppliers');
     const totalSalesEl = document.getElementById('totalSales');
     
-    if (totalProductsEl) totalProductsEl.textContent = data.products.length;
-    if (totalSuppliersEl) totalSuppliersEl.textContent = data.suppliers.length;
-    if (totalSalesEl) totalSalesEl.textContent = data.sales.length;
+    // if (totalProductsEl) totalProductsEl.textContent = data.products.length;
+    // if (totalSuppliersEl) totalSuppliersEl.textContent = data.suppliers.length;
+    // if (totalSalesEl) totalSalesEl.textContent = data.sales.length;
 }
 
 // Sales Functions
@@ -452,10 +453,6 @@ function initializeProducts() {
         });
     }    
     
-    if (categoryForm) {
-        categoryForm.addEventListener('submit', saveCategory);
-    }
-    
     if (productForm) {
         productForm.addEventListener('submit', saveProduct);
     }
@@ -463,79 +460,160 @@ function initializeProducts() {
     if (backToCategoriesBtn) {
         backToCategoriesBtn.addEventListener('click', showCategoryView);
     }
-    
-    // Initialize category dropdown
-    updateProductCategoryDropdown();
 }
 
-function renderCategories() {
+function loadCategories() {
+    fetch('get_categories.php')
+        .then(res => res.json())
+        .then(data => {
+            window.categoriesData = data;
+            renderCategories(data);
+        })
+        .catch(error => {
+            console.error('Error fetching categories:', error);
+        });
+}
+
+function renderCategories(categoryList = window.categoriesData) {
     const tbody = document.getElementById('categoryTableBody');
     if (!tbody) return;
-   
+
     tbody.innerHTML = '';
-   
-    data.categories.forEach((category, index) => {
+
+    categoryList.forEach((category, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
-            <td>${category}</td>
+            <td>${category.category_name}</td>
             <td class="action-btns">
-                <button class="btn btn-success" onclick="showProducts('${category}')">
+                <button class="btn btn-success" onclick="showProducts(${category.category_id})">
                     View Products
                 </button>
-                <button class="btn btn-danger" onclick="deleteCategory(${index})">
+                <button class="btn btn-success" onclick="editCategory(${category.category_id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger" onclick="deleteCategory(${category.category_id})">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
         `;
         tbody.appendChild(row);
     });
-   
-    // Update product category dropdown
-    updateProductCategoryDropdown();
 }
 
-// Add this new function after renderCategories
-function updateProductCategoryDropdown() {
-    const categorySelect = document.getElementById('productCategory');
-    if (categorySelect) {
-        categorySelect.innerHTML = '<option value="">Select Category</option>';
-        data.categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categorySelect.appendChild(option);
-        });
+function editCategory(id) {
+    const category = window.categoriesData.find(c => c.category_id == id);
+    console.log("Editing Category:", category);
+    if (!category) {
+        console.warn('Category not found for ID:', id);
+        return;
     }
+    document.getElementById('categoryName').value = category.category_name;
+    document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+    currentEditingId = id;
+
+    openModal('categoryModal');
 }
 
-function renderProducts(categoryFilter = null) {
-    const tbody = document.getElementById('productTableBody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    let productsToShow = categoryFilter
-        ? data.products.filter(product => product.category === categoryFilter)
-        : data.products;
-    
-    productsToShow.forEach((product, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${product.name}</td>
-            <td>${product.size || 'N/A'}</td>
-            <td>
-                <button class="action-btn view-btn" onclick="showIngredients(${product.id})">
-                    View Ingredients
-                </button>
-                <button class="action-btn delete-btn" onclick="deleteProduct(${product.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
+function saveCategory(e) {
+    e.preventDefault();
+
+    const categoryName = document.getElementById('categoryName').value.trim();
+    if (!categoryName) {
+        alert('Category name is required');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('category_id', currentEditingId || '');
+    formData.append('category_name', categoryName);
+
+    fetch('save_category.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.success) {
+            alert('Category saved successfully!');
+            closeModal('categoryModal');
+            currentCategoryEditingId = null;
+            loadCategories();
+        } else {
+            alert('Failed to save category: ' + response.message);
+        }
+    })
+    .catch(err => {
+        console.error('Error saving category:', err);
+        alert('Error occurred while saving category.');
     });
+}
+
+function deleteCategory(id) {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+
+    fetch('delete_category.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ category_id: id })
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            alert('Category deleted successfully');
+            loadCategories();
+        } else {
+            alert('Failed to delete category: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting category:', error);
+        alert('An error occurred while deleting the category.');
+    });
+}
+
+function renderProducts(categoryId) {
+    const tbody = document.getElementById('productTableBody');
+    if (!tbody || !categoryId) return;
+
+    tbody.innerHTML = '';
+
+    fetch(`get_products.php?category_id=${categoryId}`)
+        .then(res => res.json())
+        .then(response => {
+            if (!response.success) {
+                console.error('Fetch error:', response.message);
+                return;
+            }
+
+            const products = response.data;
+
+            products.forEach((product, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${product.product_name}</td>
+                    <td>${product.size_label || 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-success" onclick="showIngredients(${product.product_variant_id})">
+                            View Ingredients
+                        </button>
+                        <button class="btn btn-primary" onclick="editProduct(${product.product_variant_id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${product.product_variant_id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+        });
 }
 
 // Ingredients Modal Functions
@@ -564,32 +642,6 @@ function showIngredients(productId) {
     
     // Show modal
     openModal('ingredientsModal');
-}
-
-function saveCategory(e) {
-    e.preventDefault();
-    
-    const categoryName = document.getElementById('categoryName')?.value;
-    
-    if (!categoryName) {
-        alert('Please enter a category name');
-        return;
-    }
-    
-    if (currentEditingId) {
-        // Edit existing category
-        const index = data.categories.findIndex((cat, idx) => idx === currentEditingId);
-        if (index !== -1) {
-            data.categories[index] = categoryName;
-        }
-    } else {
-        // Add new category
-        data.categories.push(categoryName);
-    }
-    
-    saveToLocalStorage('categoriesData', data.categories);
-    renderCategories();
-    closeModal('categoryModal');
 }
 
 function saveProduct(e) {
@@ -695,14 +747,6 @@ function showProductList() {
 function showCategoryList() {
     showCategoryView();
     renderCategories();
-}
-
-function deleteCategory(index) {
-    if (confirm('Are you sure you want to delete this category?')) {
-        data.categories.splice(index, 1);
-        saveToLocalStorage('categoriesData', data.categories);
-        renderCategories();
-    }
 }
 
 // Supply Functions - Updated for read-only Supply List

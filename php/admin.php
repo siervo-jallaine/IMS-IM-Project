@@ -516,7 +516,7 @@ if (!isset($_SESSION['username']) ||
             <form id="categoryForm" onsubmit="saveCategory(event)">
                 <div class="form-group">
                     <label for="categoryName">Category Name</label>
-                    <input type="text" id="categoryName" required>
+                    <input type="text" id="categoryName" autocomplete="off" required>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save</button>
