@@ -25,7 +25,8 @@ $sql = "
     LEFT JOIN product_variant pv ON p.product_code = pv.product_code
     LEFT JOIN product_size ps ON pv.product_size_id = ps.product_size_id
     LEFT JOIN category c ON p.category_id = c.category_id
-    WHERE p.category_id = ?
+    WHERE p.category_id = ? and
+          pv.is_active = 1
     ORDER BY p.product_name ASC
 ";
 
