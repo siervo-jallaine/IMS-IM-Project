@@ -499,7 +499,7 @@ if (!isset($_SESSION['username']) ||
             Are you sure you want to log out?
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="performLogout()">Yes, Log Out</button>
+            <button class="btn btn-primary" onclick="performLogout()">Log Out</button>
             <button class="btn btn-secondary" onclick="closeModal('logoutConfirmModal')">Cancel</button>
         </div>
         </div>
