@@ -102,7 +102,7 @@ function openModal(modalId) {
       delete document.getElementById('userForm').dataset.userId;
   }
 
-  modal.style.display = 'block';
+  modal.classList.add('show');
 }
 
 
@@ -1039,140 +1039,6 @@ function renderSupplies() {
       });
 }
 
-// Added Supply Functions (Full CRUD)
-function renderAddedSupplies() {
-  fetch('added_supply.php')
-      .then(response => response.json())
-      .then(data => {
-          if (data.success) {
-              const tbody = document.getElementById('addedSupplyTableBody');
-              tbody.innerHTML = '';
-
-              data.data.forEach((supply, index) => {
-                  const row = document.createElement('tr');
-                  row.innerHTML = `
-                      <td>${index + 1}</td>
-                      <td>${supply.supply_name}</td>
-                      <td>${supply.quantity}</td>
-                      <td>${supply.unit}</td>
-                      <td>${supply.received_by}</td>
-                      <td>${formatDate(supply.date_added)}</td>
-                      <td>
-                          <button class="btn btn-sm btn-warning" onclick="editAddedSupply(${supply.purchase_item_id}, '${supply.supply_name}', ${supply.quantity}, '${supply.unit}')">
-                              <i class="fas fa-edit"></i>
-                          </button>
-                          <button class="btn btn-sm btn-danger" onclick="deleteAddedSupply(${supply.purchase_item_id})">
-                              <i class="fas fa-trash"></i>
-                          </button>
-                      </td>
-                  `;
-                  tbody.appendChild(row);
-              });
-          } else {
-              console.error('Error loading added supplies:', data.error);
-              showAlert('Error loading added supplies: ' + data.error, 'error');
-          }
-      })
-      .catch(error => {
-          console.error('Error:', error);
-          showAlert('Error loading added supplies', 'error');
-      });
-}
-
-// Save Supply (handles both add and update)
-function saveSupply(event) {
-  event.preventDefault();
-
-  const form = document.getElementById('supplyForm');
-  const formData = new FormData(form);
-
-  const supplyData = {
-      supply_name: document.getElementById('supplyName').value,
-      quantity: parseFloat(document.getElementById('supplyQuantity').value),
-      unit: document.getElementById('supplyUnit').value,
-      received_by: document.getElementById('supplyReceivedBy').value
-  };
-
-  // Check if we're editing (will have a hidden field or data attribute)
-  const isEditing = form.dataset.editing === 'true';
-  const method = isEditing ? 'PUT' : 'POST';
-
-  if (isEditing) {
-      supplyData.purchase_item_id = parseInt(form.dataset.editId);
-  }
-
-  fetch('added_supply.php', {
-      method: method,
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(supplyData)
-  })
-  .then(response => response.json())
-  .then(data => {
-      if (data.success) {
-          showAlert(data.message, 'success');
-          closeModal('supplyModal');
-          renderAddedSupplies(); // Refresh the added supplies list
-          renderSupplies(); // Refresh the supply list as well
-          form.reset();
-          form.dataset.editing = 'false';
-          form.dataset.editId = '';
-      } else {
-          showAlert('Error: ' + data.error, 'error');
-      }
-  })
-  .catch(error => {
-      console.error('Error:', error);
-      showAlert('Error saving supply', 'error');
-  });
-}
-
-// Edit Added Supply
-function editAddedSupply(purchaseItemId, supplyName, quantity, unit) {
-  const form = document.getElementById('supplyForm');
-  const modal = document.getElementById('supplyModal');
-
-  // Set form values
-  document.getElementById('supplyName').value = supplyName;
-  document.getElementById('supplyQuantity').value = quantity;
-  document.getElementById('supplyUnit').value = unit;
-  document.getElementById('supplyReceivedBy').value = ''; // Can't edit received by
-
-  // Mark as editing
-  form.dataset.editing = 'true';
-  form.dataset.editId = purchaseItemId;
-
-  // Update modal title
-  document.getElementById('supplyModalTitle').textContent = 'Edit Supply';
-
-  // Show modal
-  modal.style.display = 'block';
-}
-
-// Delete Added Supply
-function deleteAddedSupply(purchaseItemId) {
-  if (confirm('Are you sure you want to delete this supply entry?')) {
-      fetch(`added_supply.php?id=${purchaseItemId}`, {
-          method: 'DELETE'
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.success) {
-              showAlert(data.message, 'success');
-              renderAddedSupplies(); // Refresh the added supplies list
-              renderSupplies(); // Refresh the supply list as well
-          } else {
-              showAlert('Error: ' + data.error, 'error');
-          }
-      })
-      .catch(error => {
-          console.error('Error:', error);
-          showAlert('Error deleting supply', 'error');
-      });
-  }
-}
-
 // Filter functions
 function filterSupplies() {
   const searchTerm = document.getElementById('supplySearch').value.toLowerCase();
@@ -1187,16 +1053,6 @@ function filterSupplies() {
       } else {
           row.style.display = 'none';
       }
-  });
-}
-
-// Utility function to format date
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
   });
 }
 
