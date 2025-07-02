@@ -2,95 +2,12 @@
 let currentEditingId = null;
 let currentSection = 'dashboard';
 
-// Data Storage with localStorage integration
-let data = {
-    sales: JSON.parse(localStorage.getItem('salesData')) || [],
-    categories: JSON.parse(localStorage.getItem('categoriesData')) || ['Espresso', 'Brewed', 'Hot Coffee', 'Iced Coffee', 'Frappe'],
-    products: JSON.parse(localStorage.getItem('productsData')) || [
-        {
-            id: 1,
-            name: "Espresso Macchiato",
-            size: "SHOT",
-            category: "Espresso",
-            stock: 20,
-            ingredients: [
-                { name: "Coffee Beans", amount: "1 Gram" },
-                { name: "Full Cream Milk", amount: "15 ML" }
-            ]
-        },
-        {
-            id: 2,
-            name: "Espresso",
-            size: "SHOT",
-            category: "Espresso", 
-            stock: 15,
-            ingredients: [
-                { name: "Coffee Beans", amount: "1 Gram" },
-                { name: "Full Cream Milk", amount: "15 ML" }
-            ]
-        },
-        {
-            id: 3,
-            name: "Iced Americano",
-            size: "12oz",
-            category: "Iced Coffee",
-            stock: 10,
-            ingredients: [
-                { name: "Coffee Beans", amount: "2 Grams" },
-                { name: "Ice Cubes", amount: "100 ML" },
-                { name: "Water", amount: "200 ML" }
-            ]
-        }
-    ],
-    
-    supplies: JSON.parse(localStorage.getItem('suppliesData')) || [
-        { id: 1, name: "Robusta Coffee Beans", quantity: 1, unit: "PG" },
-        { id: 2, name: "Caramel Sauce", quantity: 1, unit: "BTL" },
-        { id: 3, name: "Chocolate Sauce", quantity: 1, unit: "BTL" },
-        { id: 4, name: "Hazel Nut Syrup", quantity: 1, unit: "BTL" },
-        { id: 5, name: "Fresh Milk", quantity: 1, unit: "CTN" }
-    ],
-    addedSupplies: JSON.parse(localStorage.getItem('addedSuppliesData')) || [],
-    suppliers: JSON.parse(localStorage.getItem('suppliersData')) || [
-        { id: 1, name: 'Coffee Beans', number: '09xxxxxxxxx', contact: 'Jeff Valdez' },
-        { id: 2, name: 'Caramel Sauce', number: '09xxxxxxxxx', contact: 'Jaydee Guzman' },
-        { id: 3, name: 'Chocolate Sauce', number: '09xxxxxxxxx', contact: 'Jaydee Guzman' },
-        { id: 4, name: 'Hazel Nut Syrup', number: '09xxxxxxxxx', contact: 'Jaydee Guzman' },
-        { id: 5, name: 'Fresh Milk', number: '09xxxxxxxxx', contact: 'Stella Yuro' }
-    ],
-    users: JSON.parse(localStorage.getItem('usersData')) || [
-        { id: 1, name: "Jaydee", role: "Admin", status: "Active", login: "May 11, 2025, 11:19:52 pm" },
-        { id: 2, name: "Aydee", role: "Staff", status: "Active", login: "May 11, 2025, 11:19:52 pm" },
-        { id: 3, name: "Nate", role: "Staff", status: "Active", login: "May 11, 2025, 11:19:52 pm" },
-        { id: 4, name: "Hazel", role: "Staff", status: "Active", login: "May 11, 2025, 11:19:52 pm" },
-        { id: 5, name: "Olivia", role: "Staff", status: "Active", login: "May 11, 2025, 11:19:52 pm" }
-    ]
-};
-
-data.sales = data.sales.map(sale => ({
-    id: sale.id,
-    productName: sale.productName,
-    quantity: sale.quantity,
-    date: sale.date
-}));
-
-// Utility Functions
-function saveToLocalStorage(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
-}
-
-function generateId() {
-    return Date.now() + Math.random();
-}
-
 function formatDate() {
     return new Date().toLocaleString("en-US", {
         month: "short", day: "2-digit", year: "numeric",
         hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
     });
 }
-
-// =====================================================================================================
 
 // Modal Functions
 function openModal(modalId) {
@@ -495,52 +412,6 @@ function filterSales() {
 
     renderSales(filtered);
 }
-
-// Alternative Sales Functions (from sales.js reference)
-// function addSale() {
-//     const name = document.getElementById("productName")?.value;
-//     const qty = document.getElementById("quantity")?.textContent;
-//     const addOn = document.getElementById("addOn")?.value;
-//     const addOnQty = document.getElementById("addOnQty")?.textContent;
-//     const date = new Date().toLocaleString("en-US", {
-//         month: "short", day: "2-digit", year: "numeric",
-//         hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
-//     });
-
-//     if (!name) {
-//         alert('Please enter a product name');
-//         return;
-//     }
-
-//     const table = document.getElementById("salesTableBody");
-//     if (table) {
-//         const row = document.createElement("tr");
-//         row.innerHTML = `
-//             <td>${data.sales.length + 1}</td>
-//             <td><strong>${name}</strong></td>
-//             <td>${qty}</td>
-//             <td>${date}</td>
-//             <td class="actions">
-//                 <button class="edit-btn" onclick="editSale(this)">✏️</button>
-//                 <button class="delete-btn" onclick="deleteSale(this)">🗑️</button>
-//             </td>
-//         `;
-//         table.appendChild(row);
-        
-//         // Add to data array
-//         data.sales.push({
-//             id: generateId(),
-//             productName: name,
-//             quantity: parseInt(qty),
-//             addOn: addOn,
-//             addOnQty: parseInt(addOnQty),
-//             date: date
-//         });
-        
-//         saveToLocalStorage('salesData', data.sales);
-//         closeModal('modal');
-//     }
-// }
 
 function resetForm() {
     const productName = document.getElementById("productName");
