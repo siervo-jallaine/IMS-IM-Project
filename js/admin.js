@@ -796,11 +796,11 @@ function renderSuppliers() {
                       <td>${escapeHtml(supplier.supply_name)}</td>
                       <td>${escapeHtml(supplier.supplier_name)}</td>
                       <td>${escapeHtml(supplier.contact_no || 'N/A')}</td>
-                      <td>
-                          <button class="action-btn edit-btn" onclick="editSupplier(${supplier.supply_supplier_id}, '${escapeHtml(supplier.supplier_name)}', '${escapeHtml(supplier.contact_no || '')}', '${escapeHtml(supplier.supply_name)}')">
+                      <td class="action-btns">
+                          <button class="btn btn-success" onclick="editSupplier(${supplier.supply_supplier_id}, '${escapeHtml(supplier.supplier_name)}', '${escapeHtml(supplier.contact_no || '')}', '${escapeHtml(supplier.supply_name)}')">
                               <i class="fas fa-edit"></i>
                           </button>
-                          <button class="action-btn delete-btn" onclick="deleteSupplier(${supplier.supply_supplier_id})">
+                          <button class="btn btn-sm btn-danger" onclick="deleteSupplier(${supplier.supply_supplier_id})">
                               <i class="fas fa-trash"></i>
                           </button>
                       </td>
@@ -1099,11 +1099,11 @@ function renderAddedSupplies() {
                       <td>${escapeHtml(supply.unit)}</td>
                       <td>${escapeHtml(supply.received_by)}</td>
                       <td>${formatDate(supply.date_added)}</td>
-                      <td>
-                          <button class="action-btn edit-btn" onclick="editAddedSupply(${supply.purchase_item_id}, '${escapeHtml(supply.supply_name)}', ${supply.quantity}, '${escapeHtml(supply.unit)}', '${escapeHtml(supply.received_by)}')">
+                      <td class="action-btns">
+                          <button class="btn btn-success" onclick="editAddedSupply(${supply.purchase_item_id}, '${escapeHtml(supply.supply_name)}', ${supply.quantity}, '${escapeHtml(supply.unit)}', '${escapeHtml(supply.received_by)}')">
                               <i class="fas fa-edit"></i>
                           </button>
-                          <button class="action-btn delete-btn" onclick="deleteAddedSupply(${supply.purchase_item_id})">
+                          <button class="btn btn-sm btn-danger" onclick="deleteAddedSupply(${supply.purchase_item_id})">
                               <i class="fas fa-trash"></i>
                           </button>
                       </td>
@@ -1285,8 +1285,8 @@ function renderUsers() {
                       <td>${escapeHtml(user.username)}</td>
                       <td>${escapeHtml(user.email)}</td>
                       <td>${escapeHtml(user.role)}</td>
-                      <td>
-                          <button class="btn btn-sm btn-secondary" onclick="editUser(${user.user_id})">
+                      <td class="action-btns">
+                          <button class="btn btn-success" onclick="editUser(${user.user_id})">
                               <i class="fas fa-edit"></i> Edit
                           </button>
                           <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.user_id})">
