@@ -573,12 +573,19 @@ scrollbar-color: #774927 #f1f1f1;
 }
 
 .modal-content {
-  background: white;
+  background-color: #fff;
+  padding: 2;
   border-radius: 8px;
-  width: 90%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: 100vh;
   overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: inline-grid;
+  align-items: center;
+  justify-content: space-evenly;
+  justify-items: center;
+  padding-bottom: 30px;
+  border-inline-end-style: black;
 }
 
 .modal-header {
@@ -830,13 +837,18 @@ scrollbar-color: #774927 #f1f1f1;
 
 .modal-content {
   background-color: #fff;
-  padding: 0;
+  padding: 2;
   border-radius: 8px;
-  width: 90%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: 100vh;
   overflow-y: auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: inline-grid;
+  align-items: center;
+  justify-content: space-evenly;
+  justify-items: center;
+  padding-bottom: 30px;
+  border-inline-end-style: black;
 }
 
 .modal-header {

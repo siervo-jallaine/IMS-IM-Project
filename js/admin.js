@@ -1,5 +1,6 @@
 // Global Variables
 let currentEditingId = null;
+let currentCategoryId = null;
 let currentSection = 'dashboard';
 
 function formatDate() {
@@ -157,6 +158,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadSales();
     loadCategories();
+    loadProducts();
+    loadIngredientOptions();
     // Initialize all other modules
     console.log('DOM fully loaded ✅');
     setupAutocomplete('saleProductName', 'productSuggestions', 'get_product_names.php');
@@ -448,16 +451,20 @@ function initializeProducts() {
         addCategoryBtn.addEventListener('click', () => openModal('categoryModal'));
     }
 
-    if (addProductBtn) {
-        addProductBtn.addEventListener('click', () => {
-            const hiddenInput = document.getElementById('hiddenCategoryId');
-            if (hiddenInput) hiddenInput.value = currentCategoryName;
-            openModal('productModal');
-        });
-    }
+    // if (addProductBtn) {
+    //     addProductBtn.addEventListener('click', async () => {
+    //         await loadIngredientOptions(); // ✅ Make sure ingredient options are loaded first
 
-    if (productForm) {
-        productForm.addEventListener('submit', saveProduct);
+    //         const hiddenInput = document.getElementById('hiddenCategoryId');
+    //         if (hiddenInput) hiddenInput.value = currentCategoryId; // Make sure currentCategoryId is set
+
+    //         openModal('productModal');
+    //         addIngredientRow(); // Optionally add one blank ingredient row
+    //     });
+    // }
+
+    if (categoryForm) {
+        categoryForm.addEventListener('submit', saveCategory);
     }
 
     if (backToCategoriesBtn) {
@@ -492,7 +499,7 @@ function renderCategories(categoryList = window.categoriesData) {
                 <button class="btn btn-success" onclick="showProducts(${category.category_id})">
                     View Products
                 </button>
-                <button class="btn btn-success" onclick="editCategory(${category.category_id})">
+                <button class="btn btn-primary" onclick="editCategory(${category.category_id})">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="btn btn-danger" onclick="deleteCategory(${category.category_id})">
@@ -577,11 +584,15 @@ function deleteCategory(id) {
     });
 }
 
-function renderProducts(categoryId) {
-    const tbody = document.getElementById('productTableBody');
-    if (!tbody || !categoryId) return;
+addProductBtn.addEventListener('click', () => {
+    const hiddenInput = document.getElementById('hiddenCategoryId');
+    if (hiddenInput) hiddenInput.value = currentCategoryId; // <== Make sure this has a value!
+    openModal('productModal');
+});
 
-    tbody.innerHTML = '';
+
+function loadProducts(categoryId) {
+    if (!categoryId) return;
 
     fetch(`get_products.php?category_id=${categoryId}`)
         .then(res => res.json())
@@ -590,32 +601,138 @@ function renderProducts(categoryId) {
                 console.error('Fetch error:', response.message);
                 return;
             }
-
-            const products = response.data;
-
-            products.forEach((product, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${product.product_name}</td>
-                    <td>${product.size_label || 'N/A'}</td>
-                    <td>
-                        <button class="btn btn-success" onclick="showIngredients(${product.product_variant_id})">
-                            View Ingredients
-                        </button>
-                        <button class="btn btn-primary" onclick="editProduct(${product.product_variant_id})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteProduct(${product.product_variant_id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
+            window.productsData = response.data;
+            renderProducts(response.data);
         })
         .catch(error => {
             console.error('Error loading products:', error);
+        });
+}
+
+function renderProducts(productList = window.productsData) {
+    const tbody = document.getElementById('productTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    productList.forEach((product, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${product.product_name}</td>
+            <td>${product.size_label || 'N/A'}</td>
+            <td class="action-btns">
+                <button class="btn btn-success" onclick="showIngredients(${product.product_variant_id})">
+                    View Ingredients
+                </button>
+                <button class="btn btn-primary" onclick="editProduct(${product.product_variant_id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger" onclick="deleteProduct(${product.product_variant_id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function editProduct(variantId) {
+    const product = window.productsData.find(p => p.product_variant_id == variantId);
+    if (!product) {
+        console.warn('Product not found:', variantId);
+        return;
+    }
+
+    document.getElementById('productName').value = product.product_name;
+    document.getElementById('productSize').value = product.size_label;
+    document.getElementById('productModalTitle').textContent = 'Edit Product';
+    currentEditingId = variantId;
+
+    openModal('productModal');
+}
+
+function saveProduct(e) {
+    e.preventDefault();
+
+    const form = document.getElementById('productForm');
+    const categoryId = document.getElementById('hiddenCategoryId').value;
+    const formData = new FormData(form);
+    formData.append('category_id', document.getElementById('hiddenCategoryId').value);
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value);    
+    }
+    fetch('save_product.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.success) {
+            alert("Product saved!");
+            closeModal('productModal');
+            currentEditingId = null;
+            loadProducts(categoryId);
+            form.reset();
+            document.getElementById('ingredientsList').innerHTML = '';
+        } else {
+            alert("Error: " + response.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to save.");
+    });
+}
+
+function deleteProduct(variantId) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
+    fetch('delete_product.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_variant_id: variantId })
+    })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                alert('Product deleted successfully');
+                const categoryId = document.getElementById('hiddenCategoryId').value;
+                loadProducts(categoryId);
+            } else {
+                alert('Failed to delete product: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting product:', error);
+            alert('An error occurred while deleting the product.');
+        });
+}
+
+function addIngredientRow() {
+    const list = document.getElementById('ingredientsList');
+    const row = document.createElement('div');
+    row.classList.add('ingredient-row');
+    row.innerHTML = `
+        <select name="ingredient_id[]" class="ingredient-select" required>
+            <option value="">Select Ingredient</option>
+            ${window.ingredientOptions.map(ing => `<option value="${ing.id}">${ing.name} (${ing.unit})</option>`).join('')}
+        </select>
+        <input type="number" name="ingredient_quantity[]" class="ingredient-qty" placeholder="Qty" min="0.01" step="0.01" required>
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">Remove</button>
+    `;
+    list.appendChild(row);
+}
+
+function loadIngredientOptions() {
+    return fetch('get_ingredients_list.php')
+        .then(res => res.json())
+        .then(data => {
+            window.ingredientOptions = data;
+        })
+        .catch(err => {
+            console.error('Error loading ingredient options:', err);
+            window.ingredientOptions = [];
         });
 }
 
@@ -647,83 +764,10 @@ function showIngredients(productId) {
     openModal('ingredientsModal');
 }
 
-function saveProduct(e) {
-    e.preventDefault();
-
-    const productName = document.getElementById('productName')?.value;
-    const productSize = document.getElementById('productSize')?.value;
-    const category = document.getElementById('hiddenCategoryId')?.value;
-    const categoryId = document.getElementById('hiddenCategoryId')?.value;
-
-    if (!productName || !productSize || !categoryId) {
-    alert('Please fill in all required fields');
-    return;
-    }
-
-    const productData = {
-        id: currentEditingId || generateId(),
-        name: productName,
-        size: productSize,
-        category: categoryId,
-        stock: 0,
-        ingredients: []
-    };
-
-    const newProduct = {
-        name: productName,
-        size: productSize,
-        categoryId: categoryId // pulled from hidden input
-    };
-
-    addProductToTable(newProduct);
-
-    if (currentEditingId) {
-        const index = data.products.findIndex(product => product.id === currentEditingId);
-        if (index !== -1) {
-            data.products[index] = productData;
-        }
-    } else {
-        data.products.push(productData);
-    }
-
-    saveToLocalStorage('productsData', data.products);
-    renderProducts();
-    closeModal('productModal');
-    updateDashboardStats();
-
-    // Clear form
-    document.getElementById('productForm').reset();
-    console.log("Adding Product:", productData);
-
-}
-
-
-function editProduct(id) {
-    const product = data.products.find(p => p.id === id);
-    if (product) {
-        document.getElementById('productName').value = product.name;
-        document.getElementById('productCategory').value = product.category;
-        document.getElementById('productStock').value = product.stock;
-        document.getElementById('productPrice').value = product.price;
-        document.getElementById('productModalTitle').textContent = 'Edit Product';
-        currentEditingId = id;
-        openModal('productModal');
-    }
-}
-
-function deleteProduct(id) {
-    if (confirm('Are you sure you want to delete this product?')) {
-        data.products = data.products.filter(product => product.id !== id);
-        saveToLocalStorage('productsData', data.products);
-        renderProducts();
-        updateDashboardStats();
-    }
-}
-
 function showProducts(category) {
     showProductView();
-    renderProducts(category);
-    currentCategoryName = category;
+    loadProducts(category);
+    currentCategoryId = category;
 }
 
 function showCategoryView() {
