@@ -533,23 +533,29 @@ if (!isset($_SESSION['username']) ||
                 <h2 id="productModalTitle">Add Product</h2>
                 <button class="close-btn" onclick="closeModal('productModal')">&times;</button>
             </div>
-            <form id="productForm">
+            <form id="productForm" onsubmit="saveProduct(event)">
                 <div class="form-group">
                     <label for="productName">Product Name</label>
-                    <input type="text" id="productName" required>
+                    <input type="text" id="productName" name="product_name" required>
                 </div>
             
                 <div class="form-group">
                     <label for="productSize">Product Size</label>
-                    <select id="productSize" required>
+                    <select id="productSize" name="product_size" required>
                         <option value="">Select Size</option>
-                        <option value="SHOT">SHOT</option>
-                        <option value="12oz">12oz</option>
-                        <option value="13oz">13oz</option>
+                        <option value="Shot">Shot</option>
+                        <option value="12 oz">12 oz</option>
+                        <option value="16 oz">16 oz</option>
                     </select>
                 </div>
             
-                <input type="hidden" id="hiddenCategoryId">
+                <input type="hidden" id="hiddenCategoryId" name="category_id">
+
+                <div class="form-group">
+                    <label>Ingredients</label>
+                    <div id="ingredientsList"></div>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="addIngredientRow()">+ Add Ingredient</button>
+                </div>
             
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Add</button>
