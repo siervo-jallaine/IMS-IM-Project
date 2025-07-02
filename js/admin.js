@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadSectionData(sectionName) {
     switch(sectionName) {
         case 'sales':
-            renderSales();
+            loadSales();
             // setupAutocomplete('saleProductName', 'productSuggestions', 'get_product_names.php');
             break;
         case 'products':
@@ -343,7 +343,7 @@ function saveSale(e) {
             alert('Sale saved successfully!');
             closeModal('saleModal');
             currentEditingId = null;
-            renderSales(); // Re-fetch updated list
+            loadSales(); // Re-fetch updated list
         } else {
             alert('Failed to save sale: ' + response.message);
         }
@@ -389,7 +389,7 @@ function deleteSale(id) {
     .then(result => {
         if (result.success) {
             alert('Sale deleted successfully');
-            renderSales();
+            loadSales();
             updateDashboardStats();
         } else {
             alert('Failed to delete sale: ' + result.message);
@@ -432,7 +432,7 @@ function deleteRow(button) {
     }
 }
 
-// Products Functions
+// =================== Products Functions =================== //
 function initializeProducts() {
     const addCategoryBtn = document.getElementById('addCategoryBtn');
     const addProductBtn = document.getElementById('addProductBtn');
