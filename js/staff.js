@@ -1,6 +1,7 @@
 // Global Variables
 let currentEditingId = null;
 let currentSection = 'dashboard';
+let isSubmitting = false;
 
 function formatDate() {
     return new Date().toLocaleString("en-US", {
@@ -11,15 +12,17 @@ function formatDate() {
 
 // Modal Functions
 function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('show');
-        
-        const form = modal.querySelector('form');
-        if (form && !currentEditingId) {
-            form.reset();
-        }
-    }
+  const modal = document.getElementById(modalId);
+
+  // Reset form for new entries
+  if (modalId === 'userModal' && document.getElementById('userModalTitle').textContent !== 'Edit User') {
+      document.getElementById('userForm').reset();
+      document.getElementById('userModalTitle').textContent = 'Add User';
+      document.getElementById('userPassword').required = true;
+      delete document.getElementById('userForm').dataset.userId;
+  }
+
+  modal.classList.add('show');
 }
 
 function closeModal(modalId) {
@@ -41,7 +44,7 @@ function resetModalTitles() {
         'supplierModalTitle': 'Add Supplier',
         'userModalTitle': 'Add Staff'
     };
-    
+
     Object.keys(modalTitles).forEach(titleId => {
         const titleElement = document.getElementById(titleId);
         if (titleElement) {
@@ -54,7 +57,7 @@ function resetModalTitles() {
 function changeQuantity(elementId, delta) {
     const el = document.getElementById(elementId);
     if (!el) return;
-  
+
     // If it's a number‐input, change its .value
     if (el.tagName === 'INPUT' && el.type === 'number') {
       let val = parseInt(el.value, 10) || 1;
@@ -67,7 +70,7 @@ function changeQuantity(elementId, delta) {
       val = Math.max(1, val + delta);
       el.textContent = val;
     }
-  }  
+  }
 
 function changeQty(type, delta) {
     const element = document.getElementById(type);
@@ -91,7 +94,7 @@ function initializeNavigation() {
 function toggleDropdown() {
     const dropdown = document.querySelector('.dropdown');
     const dropdownMenu = document.getElementById("supplyDropdownMenu");
-    
+
     if (dropdown && dropdownMenu) {
         dropdown.classList.toggle('open');
         dropdownMenu.classList.toggle('show');
@@ -104,7 +107,7 @@ function switchSection(sectionName) {
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Remove active class from all nav items
     document.querySelectorAll('.nav-item, .dropdown-toggle, .dropdown-item').forEach(item => {
         item.classList.remove('active');
@@ -120,7 +123,7 @@ function switchSection(sectionName) {
     const activeNavItem = document.querySelector(`[data-section="${sectionName}"]`);
     if (activeNavItem) {
         activeNavItem.classList.add('active');
-        
+
         // If it's a dropdown item, also highlight the main dropdown
         if (activeNavItem.classList.contains('dropdown-item')) {
             const dropdownToggle = document.querySelector('.dropdown-toggle');
@@ -131,7 +134,7 @@ function switchSection(sectionName) {
     }
 
     currentSection = sectionName;
-    
+
     // Load section-specific data
     loadSectionData(sectionName);
 }
@@ -146,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleDropdown();
         });
     }
-    
+
     const dropdownItems = document.querySelectorAll('.dropdown-item');
 
     // Setup dropdown menu items
@@ -263,7 +266,7 @@ function updateDashboardStats() {
     const totalProductsEl = document.getElementById('totalProducts');
     const totalSuppliersEl = document.getElementById('totalSuppliers');
     const totalSalesEl = document.getElementById('totalSales');
-    
+
     if (totalProductsEl) totalProductsEl.textContent = data.products.length;
     if (totalSuppliersEl) totalSuppliersEl.textContent = data.suppliers.length;
     if (totalSalesEl) totalSalesEl.textContent = data.sales.length;
@@ -416,7 +419,7 @@ function resetForm() {
     const addOn = document.getElementById("addOn");
     const quantity = document.getElementById("quantity");
     const addOnQty = document.getElementById("addOnQty");
-    
+
     if (productName) productName.value = "Ice Americano";
     if (addOn) addOn.value = "Vanilla Syrup";
     if (quantity) quantity.textContent = "1";
@@ -437,23 +440,23 @@ function initializeProducts() {
     const categoryForm = document.getElementById('categoryForm');
     const productForm = document.getElementById('productForm');
     const backToCategoriesBtn = document.getElementById('backToCategoriesBtn');
-    
+
     if (addCategoryBtn) {
         addCategoryBtn.addEventListener('click', () => openModal('categoryModal'));
     }
-    
+
     if (addProductBtn) {
         addProductBtn.addEventListener('click', () => openModal('productModal'));
     }
-    
+
     if (categoryForm) {
         categoryForm.addEventListener('submit', saveCategory);
     }
-    
+
     if (productForm) {
         productForm.addEventListener('submit', saveProduct);
     }
-    
+
     if (backToCategoriesBtn) {
         backToCategoriesBtn.addEventListener('click', showCategoryView);
     }
@@ -576,7 +579,7 @@ function showProducts(category) {
 function showCategoryView() {
     const categoryView = document.getElementById('categoryView');
     const productView = document.getElementById('productView');
-    
+
     if (categoryView) categoryView.style.display = 'block';
     if (productView) productView.style.display = 'none';
 }
@@ -584,7 +587,7 @@ function showCategoryView() {
 function showProductView() {
     const categoryView = document.getElementById('categoryView');
     const productView = document.getElementById('productView');
-    
+
     if (categoryView) categoryView.style.display = 'none';
     if (productView) productView.style.display = 'block';
 }
@@ -603,11 +606,11 @@ function showCategoryList() {
 function initializeSupplies() {
     const addSupplyBtn = document.getElementById('addSupplyBtn');
     const supplyForm = document.getElementById('supplyForm');
-    
+
     if (addSupplyBtn) {
         addSupplyBtn.addEventListener('click', () => openModal('supplyModal'));
     }
-    
+
     if (supplyForm) {
         supplyForm.addEventListener('submit', saveSupply);
     }
@@ -615,138 +618,251 @@ function initializeSupplies() {
 
 // Render Supply List (READ-ONLY - No edit/delete actions)
 function renderSupplies() {
-    const tbody = document.getElementById('supplyTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    data.supplies.forEach((s, i) => {
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td>${i+1}</td>
-          <td>${s.name}</td>
-          <td>${s.quantity}</td>
-          <td>${s.unit}</td>
-        </tr>`);
-    });
-  }
-  
-function saveSupply(e) {
-    e.preventDefault();
-  
-    // grab the form values
-    const nameEl     = document.getElementById('supplyName');
-    const qtyEl      = document.getElementById('supplyQuantity');
-    const unitEl     = document.getElementById('supplyUnit');
-    const name       = nameEl.value.trim();
-    const quantity   = parseInt(qtyEl.value, 10) || 0;
-    const unit       = unitEl.value.trim();
-  
-    if (!name || !unit) {
-      alert('Please fill in all required fields');
-      return;
-    }
-  
-    // build the supply record
-    const supplyRecord = {
-      id: currentEditingId || generateId(),
-      name,
-      quantity,
-      unit
-    };
-  
-    if (currentEditingId) {
-      // editing existing supply
-      const idx = data.supplies.findIndex(s => s.id === currentEditingId);
-      if (idx > -1) data.supplies[idx] = supplyRecord;
-    } else {
-      // adding new supply
-      data.supplies.push(supplyRecord);
-    }
-  
-    // persist & re-render
-    saveToLocalStorage('suppliesData', data.supplies);
-    renderSupplies();
-  
-    // clean up
-    closeModal('supplyModal');
-    nameEl.value = '';
-    qtyEl.value  = '';
-    unitEl.value = '';
-    currentEditingId = null;
-    document.getElementById('supplyModalTitle').textContent = 'Add Supply';
-  }
-  
+  fetch('supply_list.php')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('supplyTableBody');
+              tbody.innerHTML = '';
 
-  function renderAddedSupplies() {
-    const tbody = document.getElementById('addedSupplyTableBody');
-    tbody.innerHTML = '';
-  
-    data.addedSupplies.forEach((s, i) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${i+1}</td>
-        <td>${s.name}</td>
-        <td>${s.quantity}</td>
-        <td>${s.unit}</td>
-        <td>${s.receivedBy}</td>
-        <td>${s.dateAdded}</td>
-        <td class="action-btns">
-          <button class="btn btn-success" onclick="editAddedSupply(${s.id})">
-            <i class="fas fa-edit"></i>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(row);
-    });
+              data.data.forEach((supply, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${supply.supply_name}</td>
+                      <td>${supply.quantity}</td>
+                      <td>${supply.unit}</td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              console.error('Error loading supplies:', data.error);
+              showAlert('Error loading supplies: ' + data.error, 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          showAlert('Error loading supplies', 'error');
+      });
+}
+
+function saveSupply(e) {
+  e.preventDefault();
+
+  // grab the form values
+  const nameEl     = document.getElementById('supplyName');
+  const qtyEl      = document.getElementById('supplyQuantity');
+  const unitEl     = document.getElementById('supplyUnit');
+  const name       = nameEl.value.trim();
+  const quantity   = parseInt(qtyEl.value, 10) || 0;
+  const unit       = unitEl.value.trim();
+
+  if (!name || !unit) {
+    alert('Please fill in all required fields');
+    return;
   }
-  
-  
+
+  // build the supply record
+  const supplyRecord = {
+    id: currentEditingId || generateId(),
+    name,
+    quantity,
+    unit
+  };
+
+  if (currentEditingId) {
+    // editing existing supply
+    const idx = data.supplies.findIndex(s => s.id === currentEditingId);
+    if (idx > -1) data.supplies[idx] = supplyRecord;
+  } else {
+    // adding new supply
+    data.supplies.push(supplyRecord);
+  }
+
+  // persist & re-render
+  saveToLocalStorage('suppliesData', data.supplies);
+  renderSupplies();
+
+  // clean up
+  closeModal('supplyModal');
+  nameEl.value = '';
+  qtyEl.value  = '';
+  unitEl.value = '';
+  currentEditingId = null;
+  document.getElementById('supplyModalTitle').textContent = 'Add Supply';
+}
+
+
+function renderAddedSupplies() {
+  const tbody = document.getElementById('addedSupplyTableBody');
+  tbody.innerHTML = '';
+
+  data.addedSupplies.forEach((s, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${i+1}</td>
+      <td>${s.name}</td>
+      <td>${s.quantity}</td>
+      <td>${s.unit}</td>
+      <td>${s.receivedBy}</td>
+      <td>${s.dateAdded}</td>
+      <td class="action-btns">
+        <button class="btn btn-success" onclick="editAddedSupply(${s.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+
 
 function editAddedSupply(id) {
-    const supply = data.addedSupplies.find(s => s.id === id);
-    if (supply) {
-        document.getElementById('supplyName').value = supply.name;
-        document.getElementById('supplyQuantity').value = supply.quantity;
-        document.getElementById('supplyUnit').value = supply.unit;
-        document.getElementById('supplyModalTitle').textContent = 'Edit Added Supply';
-        currentEditingId = id;
-        openModal('supplyModal');
-    }
+  const supply = data.addedSupplies.find(s => s.id === id);
+  if (supply) {
+      document.getElementById('supplyName').value = supply.name;
+      document.getElementById('supplyQuantity').value = supply.quantity;
+      document.getElementById('supplyUnit').value = supply.unit;
+      document.getElementById('supplyModalTitle').textContent = 'Edit Added Supply';
+      currentEditingId = id;
+      openModal('supplyModal');
+  }
 }
 
 // Alternative Supply Functions (from supply list reference)
 function showAddModal() {
-    openModal('addModal');
+  openModal('addModal');
 }
 
 function hideAddModal() {
-    closeModal('addModal');
+  closeModal('addModal');
 }
 
 function addSupply() {
-    const name = document.getElementById("supplyName")?.value;
-    const qty = document.getElementById("quantity")?.value;
-    const unit = document.getElementById("unit")?.value;
-    
-    if (!name || !qty || !unit) {
-        alert("All fields required");
-        return;
-    }
-    
-    data.supplies.push({ 
-        id: generateId(),
-        name, 
-        quantity: parseInt(qty), 
-        unit 
-    });
-    
-    saveToLocalStorage('suppliesData', data.supplies);
-    renderSupplies();
-    hideAddModal();
+  const name = document.getElementById("supplyName")?.value;
+  const qty = document.getElementById("quantity")?.value;
+  const unit = document.getElementById("unit")?.value;
+
+  if (!name || !qty || !unit) {
+      alert("All fields required");
+      return;
+  }
+
+  data.supplies.push({
+      id: generateId(),
+      name,
+      quantity: parseInt(qty),
+      unit
+  });
+
+  saveToLocalStorage('suppliesData', data.supplies);
+  renderSupplies();
+  hideAddModal();
 }
 
 
 // Close modal when clicking outside
 function setupModalClosing() {
+  document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+              this.classList.remove('show');
+              currentEditingId = null;
+              resetModalTitles();
+          }
+      });
+  });
+}
+
+function renderSuppliers() {
+  fetch('suppliers_api.php?action=load')
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              const tbody = document.getElementById('supplierTableBody');
+              tbody.innerHTML = '';
+
+              data.data.forEach((supplier, index) => {
+                  const row = document.createElement('tr');
+                  row.innerHTML = `
+                      <td>${index + 1}</td>
+                      <td>${escapeHtml(supplier.supply_name)}</td>
+                      <td>${escapeHtml(supplier.supplier_name)}</td>
+                      <td>${escapeHtml(supplier.contact_no || 'N/A')}</td>
+                  `;
+                  tbody.appendChild(row);
+              });
+          } else {
+              console.error('Failed to load suppliers:', data.error);
+              showNotification('Failed to load suppliers', 'error');
+          }
+      })
+      .catch(error => {
+          console.error('Error loading suppliers:', error);
+          showNotification('Error loading suppliers', 'error');
+      });
+}
+
+function filterSuppliers() {
+  const searchTerm = document.getElementById('supplierSearch').value.toLowerCase();
+  const tbody = document.getElementById('supplierTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+
+  for (let row of rows) {
+      const cells = row.getElementsByTagName('td');
+      let found = false;
+
+      // Search in supply name, supplier name, and contact number
+      for (let i = 1; i <= 3; i++) {
+          if (cells[i] && cells[i].textContent.toLowerCase().includes(searchTerm)) {
+              found = true;
+              break;
+          }
+      }
+
+      row.style.display = found ? '' : 'none';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize navigation
+    initializeNavigation();
+
+    // Initialize all modules
+    initializeSales();
+    initializeProducts();
+    initializeSupplies();
+
+    // Setup modal closing
+    setupModalClosing();
+
+    // Load initial data
+    updateDashboardStats();
+
+    // Default section is dashboard, make sure it's active
+    switchSection('dashboard');
+});
+
+function confirmLogout(event) {
+    event.preventDefault();
+    openModal('logoutConfirmModal');
+  }
+
+  function performLogout() {
+    closeModal('logoutConfirmModal');
+    window.location.href = "logout.php"; // Adjust if you use a different page
+  }
+
+
+  function setupModalClosing() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -757,67 +873,3 @@ function setupModalClosing() {
         });
     });
 }
-
-// Supplier Functions
-function initializeSuppliers() {
-    const addSupplierBtn = document.getElementById('addSupplierBtn');
-    const supplierForm = document.getElementById('supplierForm');
-    
-    if (addSupplierBtn) {
-        addSupplierBtn.addEventListener('click', () => openModal('supplierModal'));
-    }
-    
-    if (supplierForm) {
-        supplierForm.addEventListener('submit', saveSupplier);
-    }
-}
-
-function renderSuppliers() {
-    const tbody = document.getElementById('supplierTableBody');
-    if (!tbody) return;
-   
-    tbody.innerHTML = '';
-   
-    data.suppliers.forEach((supplier, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${supplier.name}</td>
-            <td>${supplier.number}</td>
-            <td>${supplier.contact}</td>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize navigation
-    initializeNavigation();
-    
-    // Initialize all modules
-    initializeSales();
-    initializeProducts();
-    initializeSupplies();
-    
-    // Setup modal closing
-    setupModalClosing();
-    
-    // Load initial data
-    updateDashboardStats();
-    
-    // Default section is dashboard, make sure it's active
-    switchSection('dashboard');
-});
-
-function confirmLogout(event) {
-    event.preventDefault();
-    openModal('logoutConfirmModal');
-  }
-  
-  function performLogout() {
-    closeModal('logoutConfirmModal');
-    window.location.href = "logout.php"; // Adjust if you use a different page
-  }
-  
