@@ -1260,11 +1260,10 @@ function saveSupply(event) {
   // Check which section is currently active
   const currentSection = document.querySelector('.content-section.active').id;
 
-  if (currentSection === 'added-supply') {
+  if (currentSection === 'added-supply' || currentSection === 'supply-list') {
       return saveAddedSupply(event);
   } else {
-      // Handle supply-list section (read-only, so this might just close modal)
-      showNotification('Supply list is read-only', 'info');
+      showNotification('Unknown section', 'error');
       closeModal('supplyModal');
       return false;
   }
